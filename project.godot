@@ -10,7 +10,8 @@ config_version=5
 
 [application]
 
-config/name="SwapSlap"
+config/name="Swap & Slap"
+config/description="2D платформер — меняй тела, толкай врага, побеждай!"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
