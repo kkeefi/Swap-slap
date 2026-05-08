@@ -25,6 +25,7 @@ config/icon="res://icon.svg"
 Globals="*res://scripts/globals.gd"
 Maps="*uid://behndaff4jcpv"
 Renderer="*uid://d4bp4us30itgo"
+Mapgen="*uid://bdb6gt1cubao1"
 
 [display]
 
