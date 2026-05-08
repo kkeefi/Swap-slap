@@ -5,7 +5,7 @@ func update(delta: float) -> void: time += delta
 
 const BG_NAMES : Array = [
 	"КОСМОС","НЕБО","ВУЛКАН","ПЕЩЕРА","НЕОН",
-	"ЗАКАТ","ПОДВОДНЫЙ МИР","ЛЕС","ШТОРМ","ТУНДРА","ПУСТЫНЯ"
+	"ЗАКАТ","ОКЕАН","ЛЕС","ШТОРМ","ТУНДРА","ПУСТЫНЯ"
 ]
 const BG_ICONS : Array = ["🌌","☁️","🌋","⛏️","💡","🌅","🌊","🌿","⛈️","❄️","🏜️"]
 
@@ -172,7 +172,7 @@ func _draw_map_preview(c: Node2D, font: Font, x: float, y: float,
 		Color(0.10,0.06,0.15),  # 3 пещера
 		Color(0.02,0.01,0.10),  # 4 неон
 		Color(0.78,0.38,0.08),  # 5 закат
-		Color(0.04,0.15,0.35),  # 6 подводный
+		Color(0.04,0.15,0.35),  # 6 океан
 		Color(0.08,0.18,0.04),  # 7 лес
 		Color(0.12,0.12,0.18),  # 8 шторм
 		Color(0.70,0.78,0.88),  # 9 тундра
@@ -211,7 +211,7 @@ func _draw_map_preview(c: Node2D, font: Font, x: float, y: float,
 			c.draw_rect(Rect2(px, py_, pw, ph*0.6), Color(0.92,0.55,0.15))
 			c.draw_rect(Rect2(px, py_+ph*0.6, pw, ph*0.4), Color(0.55,0.30,0.10))
 			c.draw_circle(Vector2(px+pw*0.6, py_+ph*0.35), 6, Color(1,0.85,0.2,0.9))
-		6:  # подводный
+		6:  # океан
 			c.draw_rect(Rect2(px, py_, pw, ph*0.15), Color(0.05,0.2,0.5))
 			c.draw_rect(Rect2(px, py_+ph*0.15, pw, ph*0.85), Color(0.04,0.18,0.42))
 			for i in 3:
@@ -256,3 +256,122 @@ func _draw_rand_cell(c: Node2D, font: Font, x: float, y: float,
 				  HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Color.WHITE)
 	c.draw_string(font, Vector2(x+w/2, y+h-6), "РАНДОМ",
 				  HORIZONTAL_ALIGNMENT_CENTER, -1, 6, col)
+
+
+func _badge_glove(c: Node2D, px: float, py: float) -> void:
+	c.draw_circle(Vector2(px, py), 5.5, Globals.C_GLOVE)
+	c.draw_circle(Vector2(px+3.5, py-2.5), 2.2, Globals.C_GLOVE)
+	c.draw_rect(Rect2(px-3.5, py+1.5, 7, 3.5), Color(0.72,0.22,0.12))
+
+func _badge_boots(c: Node2D, px: float, py: float) -> void:
+	c.draw_rect(Rect2(px-4, py-2, 9, 6.5), Color(0.08,0.08,0.08))
+	c.draw_rect(Rect2(px-3.5, py-6, 8, 5.5), Globals.C_BOOTS)
+
+
+func draw_gloves_pickup(c: Node2D, pos: Vector2, bob: float) -> void:
+	var gp : Vector2 = pos + Vector2(0, sin(bob)*4)
+	var r  : float   = 9.0
+	c.draw_circle(gp, r*2.0, Color(Globals.C_GLOVE.r,Globals.C_GLOVE.g,Globals.C_GLOVE.b,0.15))
+	c.draw_circle(Vector2(gp.x, gp.y), r*0.9, Globals.C_GLOVE)
+	c.draw_circle(Vector2(gp.x+r*0.7, gp.y-r*0.5), r*0.42, Globals.C_GLOVE)
+	c.draw_rect(Rect2(gp.x-r*0.7, gp.y+r*0.3, r*1.4, r*0.7), Color(0.72,0.22,0.12))
+	c.draw_string(ThemeDB.fallback_font, Vector2(gp.x, gp.y-r*1.6),
+				  "ПЕРЧАТКИ", HORIZONTAL_ALIGNMENT_CENTER, -1, 6, Color(1,0.9,0.3,0.9))
+
+func draw_boots_pickup(c: Node2D, pos: Vector2, bob: float) -> void:
+	var gp : Vector2 = pos + Vector2(0, sin(bob*0.9)*4)
+	var r  : float   = 9.0
+	c.draw_circle(gp, r*2.0, Color(Globals.C_BOOTS.r,Globals.C_BOOTS.g,Globals.C_BOOTS.b,0.15))
+	c.draw_rect(Rect2(gp.x-r*0.88, gp.y+r*0.42, r*1.76, r*0.58), Color(0.12,0.12,0.12))
+	c.draw_rect(Rect2(gp.x-r*0.78, gp.y-r*0.52, r*1.4, r*0.98), Globals.C_BOOTS)
+	c.draw_string(ThemeDB.fallback_font, Vector2(gp.x, gp.y-r*1.6),
+				  "БОТИНКИ", HORIZONTAL_ALIGNMENT_CENTER, -1, 6, Color(0.4,1,0.6,0.9))
+
+
+func draw_player(c: Node2D, p: Dictionary, _bg: int) -> void:
+	if p.dead: return
+	if p.flash > 0 and int(p.flash * 10) % 2 == 0: return
+
+	var px  : float = p.pos.x
+	var py  : float = p.pos.y
+	var w   : float = Globals.PW * p.scale_x
+	var h   : float = Globals.PH * p.scale_y
+	var col : Color = Globals.C_P1 if p.id == 1 else Globals.C_P2
+	var drk : Color = col.darkened(0.32)
+
+
+	Globals.draw_ellipse(c, Vector2(px, py+h+2), w*0.78, 2.5, Color(0,0,0,0.38))
+
+	c.draw_rect(Rect2(px-w, py-h, w*2, h*2), col)
+	c.draw_rect(Rect2(px-w, py,   w*2, h),   drk)
+	c.draw_rect(Rect2(px-w+1, py-h+1, w*0.6, h*0.25), Color(1,1,1,0.18))
+
+	_draw_face(c, px, py, p)
+
+	if p.get("has_gloves", false):
+		_badge_glove(c, px, py-h-3)
+	if p.get("has_boots", false):
+		_badge_boots(c, px+12, py-h-3)
+
+	c.draw_string(ThemeDB.fallback_font, Vector2(px-5, py-h-12),
+				  "P%d" % p.id, HORIZONTAL_ALIGNMENT_LEFT, -1, 7,
+				  col.lightened(0.3))
+
+	if p.punch_anim > 0:
+		var t   : float = p.punch_anim / 0.25
+		var pax : float = px + float(p.facing) * (w + 5)
+		c.draw_circle(Vector2(pax, py-2), 6*t, Color(1,0.85,0.2,t*3.5))
+		for i in 5:
+			var a  : float = float(i)*TAU/5.0 + time*8.0
+			c.draw_line(Vector2(pax+cos(a)*4*t, py-2+sin(a)*4*t),
+						Vector2(pax+cos(a)*8*t, py-2+sin(a)*8*t),
+						Color(1,1,0.5,t*2.5), 1.5)
+
+func _draw_face(c: Node2D, px: float, py: float, p: Dictionary) -> void:
+	var w     : float = Globals.PW * p.scale_x
+	var h     : float = Globals.PH * p.scale_y
+	var eo    : float = float(p.facing) * 1.0
+	var blink : bool  = int(p.face_blink * 0.7) % 8 == 0
+	if not blink:
+		c.draw_rect(Rect2(px-w*0.55+eo, py-h*0.45, w*0.3, h*0.22), Color.WHITE)
+		c.draw_rect(Rect2(px+w*0.1+eo,  py-h*0.45, w*0.3, h*0.22), Color.WHITE)
+		c.draw_rect(Rect2(px-w*0.45+eo+float(p.facing), py-h*0.4, w*0.15, h*0.15), Color(0.08,0.04,0.1))
+		c.draw_rect(Rect2(px+w*0.2+eo+float(p.facing),  py-h*0.4, w*0.15, h*0.15), Color(0.08,0.04,0.1))
+	else:
+		c.draw_line(Vector2(px-w*0.55+eo, py-h*0.38), Vector2(px-w*0.25+eo, py-h*0.38), Color.WHITE, 1.5)
+		c.draw_line(Vector2(px+w*0.1+eo,  py-h*0.38), Vector2(px+w*0.4+eo,  py-h*0.38), Color.WHITE, 1.5)
+	var near_edge : bool = p.pos.x < 70 or p.pos.x > Globals.VW - 70
+	if near_edge:
+		c.draw_arc(Vector2(px+eo*0.5, py+h*0.1), 3, 0, PI, 8, Color(0.08,0.04,0.04), 1.0)
+	else:
+		c.draw_arc(Vector2(px+eo*0.5, py+h*0.05), 3, PI, TAU, 8, Color(0.08,0.04,0.04), 1.0)
+
+
+func draw_platform(c: Node2D, plat: Dictionary, map_bg: int, anim_time: float) -> void:
+	if not plat.alive: return
+	var r  : Rect2 = plat.rect
+	var sx : float = sin(anim_time*20)*plat.shake*3.5 if plat.shake>0 else 0.0
+	var sr : Rect2 = Rect2(r.position.x+sx, r.position.y, r.size.x, r.size.y)
+	var bc : Color; var tc : Color
+	match map_bg:
+		0:  bc=Color(0.16,0.20,0.44); tc=Color(0.32,0.38,0.78)
+		1:  bc=Color(0.26,0.46,0.16); tc=Color(0.42,0.70,0.25)
+		2:  bc=Color(0.38,0.16,0.06); tc=Color(0.62,0.26,0.10)
+		3:  bc=Color(0.20,0.14,0.30); tc=Color(0.36,0.24,0.52)
+		4:  bc=Color(0.06,0.04,0.20); tc=Color(0.22,0.08,0.54)
+		5:  bc=Color(0.44,0.20,0.06); tc=Color(0.68,0.36,0.10)
+		6:  bc=Color(0.06,0.26,0.46); tc=Color(0.12,0.40,0.65)
+		7:  bc=Color(0.18,0.38,0.10); tc=Color(0.30,0.58,0.16)
+		8:  bc=Color(0.20,0.20,0.30); tc=Color(0.36,0.36,0.52)
+		9:  bc=Color(0.48,0.52,0.62); tc=Color(0.65,0.70,0.82)
+		10: bc=Color(0.68,0.54,0.28); tc=Color(0.86,0.72,0.40)
+		_:  bc=Color(0.20,0.22,0.38); tc=Color(0.38,0.40,0.62)
+	if plat.marked:
+		var d : float = abs(sin(anim_time*11.0))
+		bc = bc.lerp(Color(0.85,0.15,0.05), d*0.78)
+		tc = tc.lerp(Color(1.0,0.38,0.12), d*0.78)
+	c.draw_rect(Rect2(sr.position.x+2,sr.position.y+2,sr.size.x,sr.size.y), Color(0,0,0,0.36))
+	c.draw_rect(sr, bc)
+	c.draw_rect(Rect2(sr.position.x,sr.position.y,sr.size.x,sr.size.y*0.22), Color(1,1,1,0.07))
+	c.draw_line(Vector2(sr.position.x,sr.position.y),
+				Vector2(sr.position.x+sr.size.x,sr.position.y), tc, 2.8)
