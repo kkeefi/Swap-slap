@@ -17,6 +17,7 @@ func generate(mode: int) -> Dictionary:
 
 	match mode:
 		Globals.Mode.BATTLE_RING: return _gen_battle(bg)
+		Globals.Mode.CRUMBLING: return _gen_crumble(bg)
 	return _gen_battle(bg)
 	
 func _gen_battle(bg: int) -> Dictionary:
@@ -38,6 +39,30 @@ func _gen_battle(bg: int) -> Dictionary:
 		return {"bg":bg,"plats":_plats_to_array(plats),"p1":[p1_pos.x,p1_pos.y],"p2":[p2_pos.x,p2_pos.y]}
 
 	return _fallback_battle(bg)
+	
+func _gen_crumble(bg: int) -> Dictionary:
+	var tile_w: float = randf_range(18.0, 42.0)
+	var tile_gap: float = randf_range(2.0, 6.0)
+	var tile_y: float = randf_range(210.0, 222.0)
+	var count: int = int((VW - 80.0) / (tile_w + tile_gap))
+	count = clamp(count, 5, 18)
+	var total_w: float = count * (tile_w + tile_gap) - tile_gap
+	var start_x: float = (VW - total_w) / 2.0
+
+	var plats: Array = []
+	for i in range(count):
+		var cx: float = start_x + i*(tile_w+tile_gap) + tile_w/2.0
+		plats.append(_make_plat(cx, tile_y, tile_w))
+
+	var upper: Array = _wave_upper_platforms(2, 4, 145.0, 185.0, plats)
+	for p in upper: plats.append(p)
+
+	var p1_pos: Vector2 = _find_spawn_on(plats, VW*0.25)
+	var p2_pos: Vector2 = _find_spawn_on(plats, VW*0.75)
+	if p1_pos == Vector2.ZERO: p1_pos = Vector2(start_x + tile_w/2.0, tile_y - P_HALF_H*2 - 2)
+	if p2_pos == Vector2.ZERO: p2_pos = Vector2(start_x + total_w - tile_w/2.0, tile_y - P_HALF_H*2 - 2)
+
+	return {"bg":bg,"crumble_tiles":_plats_to_array(plats),"p1":[p1_pos.x,p1_pos.y],"p2":[p2_pos.x,p2_pos.y]}
 
 func _bsp_generate(min_plats: int, max_plats: int, y_min: float, y_max: float) -> Array:
 	var target: int = int(randf_range(min_plats, max_plats + 1))
@@ -77,6 +102,29 @@ func _bsp_generate(min_plats: int, max_plats: int, y_min: float, y_max: float) -
 		plats.append({"x":cx,"y":cy,"w":w})
 
 	return plats
+	
+func _wave_upper_platforms(min_c: int, max_c: int, y_min: float, y_max: float, existing: Array) -> Array:
+	var count: int = int(randf_range(min_c, max_c + 1))
+	var result: Array = []
+
+	var occupied: Array = []
+	for p in existing:
+		occupied.append({"x0":p.x - p.w/2.0, "x1":p.x + p.w/2.0})
+
+	var spacing: float = (VW - 80.0) / (count + 1)
+	for i in range(count):
+		var x: float = 40.0 + (i + 1) * spacing + randf_range(-25.0, 25.0)
+		var y: float = randf_range(y_min, y_max)
+		var w: float = randf_range(PLAT_MIN_W, 90.0)
+
+		for occ in occupied:
+			if x + w/2.0 > occ.x0 and x - w/2.0 < occ.x1:
+				y = y_min + randf() * (y_max - y_min)
+
+		result.append({"x":x,"y":y,"w":w})
+		occupied.append({"x0":x - w/2.0, "x1":x + w/2.0})
+
+	return result
 
 func _validate_reachability(plats: Array, from_pos: Vector2, to_pos: Vector2) -> bool:
 	var n: int = plats.size()
