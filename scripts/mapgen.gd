@@ -18,6 +18,7 @@ func generate(mode: int) -> Dictionary:
 	match mode:
 		Globals.Mode.BATTLE_RING: return _gen_battle(bg)
 		Globals.Mode.CRUMBLING: return _gen_crumble(bg)
+		Globals.Mode.LAVA: return _gen_lava(bg)
 	return _gen_battle(bg)
 	
 func _gen_battle(bg: int) -> Dictionary:
@@ -63,6 +64,57 @@ func _gen_crumble(bg: int) -> Dictionary:
 	if p2_pos == Vector2.ZERO: p2_pos = Vector2(start_x + total_w - tile_w/2.0, tile_y - P_HALF_H*2 - 2)
 
 	return {"bg":bg,"crumble_tiles":_plats_to_array(plats),"p1":[p1_pos.x,p1_pos.y],"p2":[p2_pos.x,p2_pos.y]}
+	
+func _gen_lava(bg: int) -> Dictionary:
+	var plats: Array = []
+
+	var chain_count: int = int(randf_range(3.0, 6.0))
+	var last_positions: Array = []
+
+	var lx: float = randf_range(80.0, 160.0)
+	var ly: float = randf_range(210.0, 222.0)
+	for i in range(chain_count):
+		var w: float = randf_range(55.0, 95.0)
+		plats.append(_make_plat(lx, ly, w))
+		lx += randf_range(-40.0, 40.0)
+		lx  = clamp(lx, 60.0, VW*0.4)
+		ly -= randf_range(25.0, 45.0)
+		ly  = max(ly, 100.0)
+	last_positions.append(Vector2(lx, ly))
+
+	var rx: float = randf_range(VW*0.6, VW-80.0)
+	var ry: float = randf_range(210.0, 222.0)
+	for i in range(chain_count):
+		var w: float = randf_range(55.0, 95.0)
+		plats.append(_make_plat(rx, ry, w))
+		rx += randf_range(-40.0, 40.0)
+		rx  = clamp(rx, VW*0.6, VW-60.0)
+		ry -= randf_range(25.0, 45.0)
+		ry  = max(ry, 100.0)
+	last_positions.append(Vector2(rx, ry))
+
+	var mid_count: int = int(randf_range(1.0, 3.0))
+	for i in range(mid_count):
+		var cx: float = randf_range(VW*0.3, VW*0.7)
+		var cy: float = randf_range(130.0, 200.0)
+		plats.append(_make_plat(cx, cy, randf_range(65.0, 105.0)))
+
+	var p1_plat: Dictionary = _lowest_platform_in_region(plats, 0, VW*0.45)
+	var p2_plat: Dictionary = _lowest_platform_in_region(plats, VW*0.55, VW)
+	if p1_plat == null or p1_plat.is_empty(): p1_plat = plats[0] if not plats.is_empty() else _make_plat(VW*0.3, 210.0, 60.0)
+	if p2_plat == null or p2_plat.is_empty(): p2_plat = plats[plats.size()-1] if not plats.is_empty() else _make_plat(VW*0.7, 210.0, 60.0)
+
+	var p1x: float = (p1_plat.x - p1_plat.w * 0.3)
+	var p1y: float = (p1_plat.y - PLAT_H/2.0 - P_HALF_H - 2)
+	var p2x: float = (p2_plat.x + p2_plat.w * 0.3)
+	var p2y: float = (p2_plat.y - PLAT_H/2.0 - P_HALF_H - 2)
+
+	var lava_start: float = randf_range(240.0, 258.0)
+	var lava_speed: float = randf_range(3.0, 7.5)
+
+	return {"bg":bg,"plats":_plats_to_array(plats),
+			"p1":[p1x,p1y],"p2":[p2x,p2y],
+			"ls":lava_start,"lspd":lava_speed}
 
 func _bsp_generate(min_plats: int, max_plats: int, y_min: float, y_max: float) -> Array:
 	var target: int = int(randf_range(min_plats, max_plats + 1))
@@ -205,6 +257,17 @@ func _find_spawn_on(plats: Array, preferred_x: float) -> Vector2:
 	var bx: float = best.x if "x" in best else best.rect.get_center().x
 	var by: float = best.y if "y" in best else best.rect.position.y
 	return Vector2(bx, by - PLAT_H/2.0 - P_HALF_H - 2)
+	
+func _lowest_platform_in_region(plats: Array, x_min: float, x_max: float):
+	var best: Dictionary = {}
+	var best_y: float = -9999.0
+	for p in plats:
+		var px: float = p.x if "x" in p else p.rect.get_center().x
+		var py: float = p.y if "y" in p else p.rect.get_center().y
+		if px >= x_min and px <= x_max and py > best_y:
+			best_y = py
+			best = p
+	return best
 	
 func _fallback_battle(bg: int) -> Dictionary:
 	return {"bg":bg,"p1":[155,200],"p2":[325,200],
