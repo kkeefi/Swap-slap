@@ -19,6 +19,8 @@ func generate(mode: int) -> Dictionary:
 		Globals.Mode.BATTLE_RING: return _gen_battle(bg)
 		Globals.Mode.CRUMBLING: return _gen_crumble(bg)
 		Globals.Mode.LAVA: return _gen_lava(bg)
+		Globals.Mode.KING: return _gen_king(bg)
+		Globals.Mode.CHAOS: return _gen_battle(bg)
 	return _gen_battle(bg)
 	
 func _gen_battle(bg: int) -> Dictionary:
@@ -311,3 +313,75 @@ func _fallback_king(bg: int) -> Dictionary:
 	return {"bg":bg,"p1":[155,200],"p2":[325,200],
 			"plats":[[240,228,260,14],[110,182,80,10],[370,182,80,10]],
 			"zone":[190,192,100,24],"zone_moves":false}
+			
+func marching_squares_lava(lava_y: float, wave_time: float) -> Array:
+	const COLS : int = 24
+	const ROWS : int = 6
+	var cw : float = Globals.VW / float(COLS)
+	var ch : float = 36.0 
+
+	var grid : Array = []
+	for row in range(ROWS + 1):
+		var row_arr : Array = []
+		for col in range(COLS + 1):
+			var wx : float = float(col) * cw
+			var wave : float = sin(wave_time*2.0 + wx*0.05) * 5.5 + sin(wave_time*3.3 + wx*0.09) * 2.5
+			var surf : float = lava_y + wave
+			var wy : float = surf + float(ROWS - row) * ch
+			var val : float = clamp((wy - surf) / ch + 0.5, 0.0, 1.0)
+			row_arr.append(val)
+		grid.append(row_arr)
+
+	var segs : Array = []
+
+	for row in range(ROWS):
+		for col in range(COLS):
+			var tl : float = float(grid[row][col])
+			var tr : float = float(grid[row][col + 1])
+			var br : float = float(grid[row + 1][col + 1])
+			var bl : float = float(grid[row + 1][col])
+
+			var ci : int = 0
+			if tl > 0.5: ci |= 8
+			if tr > 0.5: ci |= 4
+			if br > 0.5: ci |= 2
+			if bl > 0.5: ci |= 1
+
+			if ci == 0 or ci == 15: continue
+
+			var wave2 : float = sin(wave_time*2.0 + float(col)*cw*0.05)*5.5 + sin(wave_time*3.3 + float(col)*cw*0.09)*2.5
+			var surf2 : float = lava_y + wave2
+			var x0 : float = float(col) * cw
+			var y0 : float = surf2 - float(ROWS - row - 1) * ch - ch
+			var x1 : float = x0 + cw
+			var y1 : float = y0 + ch
+
+			var mt : Vector2 = Vector2(x0 + _ms_lerp(tl, tr) * cw, y0)
+			var mr : Vector2 = Vector2(x1, y0 + _ms_lerp(tr, br) * ch)
+			var mb : Vector2 = Vector2(x0 + _ms_lerp(bl, br) * cw, y1)
+			var ml : Vector2 = Vector2(x0, y0 + _ms_lerp(tl, bl) * ch)
+
+			match ci:
+				1:  segs.append({"a": mb, "b": ml})
+				2:  segs.append({"a": mr, "b": mb})
+				3:  segs.append({"a": mr, "b": ml})
+				4:  segs.append({"a": mt, "b": mr})
+				5:
+					segs.append({"a": mt, "b": ml})
+					segs.append({"a": mr, "b": mb})
+				6:  segs.append({"a": mt, "b": mb})
+				7:  segs.append({"a": mt, "b": ml})
+				8:  segs.append({"a": ml, "b": mt})
+				9:  segs.append({"a": mb, "b": mt})
+				10:
+					segs.append({"a": ml, "b": mb})
+					segs.append({"a": mt, "b": mr})
+				11: segs.append({"a": mr, "b": mt})
+				12: segs.append({"a": ml, "b": mr})
+				13: segs.append({"a": mb, "b": mr})
+				14: segs.append({"a": ml, "b": mb})
+	return segs
+
+func _ms_lerp(a: float, b: float) -> float:
+	if abs(b - a) < 0.0001: return 0.5
+	return clamp((0.5 - a) / (b - a), 0.0, 1.0)
