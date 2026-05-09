@@ -115,6 +115,32 @@ func _gen_lava(bg: int) -> Dictionary:
 	return {"bg":bg,"plats":_plats_to_array(plats),
 			"p1":[p1x,p1y],"p2":[p2x,p2y],
 			"ls":lava_start,"lspd":lava_speed}
+			
+func _gen_king(bg: int) -> Dictionary:
+	var attempt: int = 0
+	while attempt < 15:
+		attempt += 1
+		var plats: Array = _bsp_generate(4, 6, 155.0, 225.0)
+		if plats.is_empty(): continue
+		var floor_w: float = randf_range(220.0, 310.0)
+		plats.push_front(_make_plat(VW/2.0, 228.0, floor_w))
+
+		var p1_pos: Vector2 = _find_spawn_on(plats, VW*0.25)
+		var p2_pos: Vector2 = _find_spawn_on(plats, VW*0.75)
+		if p1_pos == Vector2.ZERO or p2_pos == Vector2.ZERO: continue
+
+		var zone_plat: Dictionary = _highest_platform(plats)
+		var zone_moves: bool = randf() > 0.5
+		var zw: float = randf_range(70.0, 120.0)
+		var zh: float = 22.0
+		var zx: float = zone_plat.x - zw/2.0
+		var zy: float = zone_plat.y - PLAT_H/2.0 - zh
+
+		return {"bg":bg,"plats":_plats_to_array(plats),
+				"p1":[p1_pos.x,p1_pos.y],"p2":[p2_pos.x,p2_pos.y],
+				"zone":[zx,zy,zw,zh],"zone_moves":zone_moves}
+
+	return _fallback_king(bg)
 
 func _bsp_generate(min_plats: int, max_plats: int, y_min: float, y_max: float) -> Array:
 	var target: int = int(randf_range(min_plats, max_plats + 1))
@@ -258,6 +284,14 @@ func _find_spawn_on(plats: Array, preferred_x: float) -> Vector2:
 	var by: float = best.y if "y" in best else best.rect.position.y
 	return Vector2(bx, by - PLAT_H/2.0 - P_HALF_H - 2)
 	
+func _highest_platform(plats: Array) -> Dictionary:
+	var best: Dictionary = plats[0] if not plats.is_empty() else _make_plat(VW/2.0, 150.0, 80.0)
+	var best_y: float = 9999.0
+	for p in plats:
+		var py: float = p.y if "y" in p else p.rect.get_center().y
+		if py < best_y: best_y = py; best = p
+	return best
+	
 func _lowest_platform_in_region(plats: Array, x_min: float, x_max: float):
 	var best: Dictionary = {}
 	var best_y: float = -9999.0
@@ -272,3 +306,8 @@ func _lowest_platform_in_region(plats: Array, x_min: float, x_max: float):
 func _fallback_battle(bg: int) -> Dictionary:
 	return {"bg":bg,"p1":[155,200],"p2":[325,200],
 			"plats":[[240,228,300,14],[130,185,78,10],[350,185,78,10]]}
+			
+func _fallback_king(bg: int) -> Dictionary:
+	return {"bg":bg,"p1":[155,200],"p2":[325,200],
+			"plats":[[240,228,260,14],[110,182,80,10],[370,182,80,10]],
+			"zone":[190,192,100,24],"zone_moves":false}
