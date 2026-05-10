@@ -34,6 +34,11 @@ func draw(canvas: Node2D, bg_id: int):
 		3: _bg_cave(canvas)
 		4: _bg_neon(canvas)
 		5: _bg_sunset(canvas)
+		6: _bg_underwater(canvas)
+		7: _bg_forest(canvas)
+		8: _bg_storm(canvas)
+		9: _bg_tundra(canvas)
+		10: _bg_desert(canvas)
 		_: _bg_space(canvas)
 
 func _draw_cloud(c: Node2D, x: float, y: float, w: float, a: float):
@@ -136,3 +141,101 @@ func _bg_sunset(c: Node2D):
 	
 	var hill_colors = PackedColorArray([Color(0.12,0.08,0.06), Color(0.12,0.08,0.06), Color(0.12,0.08,0.06), Color(0.12,0.08,0.06), Color(0.12,0.08,0.06), Color(0.12,0.08,0.06)])
 	c.draw_polygon(PackedVector2Array([Vector2(0,Globals.VH),Vector2(0,Globals.VH*0.7),Vector2(120,Globals.VH*0.55),Vector2(240,Globals.VH*0.7),Vector2(Globals.VW,Globals.VH*0.62),Vector2(Globals.VW,Globals.VH)]), hill_colors)
+
+func _bg_underwater(c: Node2D):
+	for y in range(0,int(Globals.VH),3):
+		var t: float = float(y)/Globals.VH
+		c.draw_rect(Rect2(0,y,Globals.VW,3), Color(0.02+t*0.05,0.18+t*0.12,0.48+t*0.18))
+	for i in 5:
+		var bx: float = 58.0+i*90.0
+		c.draw_line(Vector2(bx,0),Vector2(bx+26+sin(time+i)*16,Globals.VH),Color(0.6,0.85,1.0,0.07),24.0)
+	for i in 20:
+		var bub_x: float = 22.0+i*24.0
+		var bub_y: float = fmod(time*18.0*(0.8+i%3*0.2)+i*28.0, Globals.VH)
+		c.draw_circle(Vector2(bub_x,Globals.VH-bub_y), 2.5+i%4, Color(0.7,0.9,1.0,0.48))
+	for i in 9:
+		var cx: float = 28.0+i*52.0
+		for b in 3:
+			c.draw_line(Vector2(cx+b*8-8,Globals.VH),Vector2(cx+b*8-8+sin(b)*5,Globals.VH-28-b*16),Color(0.9,0.25+b*0.15,0.35+b*0.1,0.88),3.0)
+	for i in 5:
+		var fx: float = fmod(time*22.0+i*88.0,Globals.VW+22)-12
+		var fy: float = 55.0+i*28.0+sin(time+i*1.4)*12.0
+		var fish_colors = PackedColorArray([Color(1,0.6,0.2), Color(1,0.6,0.2), Color(1,0.6,0.2)])
+		c.draw_polygon(PackedVector2Array([Vector2(fx,fy),Vector2(fx-10,fy-4),Vector2(fx-10,fy+4)]), fish_colors)
+		c.draw_circle(Vector2(fx+2,fy), 5, Color(1,0.6,0.2,0.9))
+
+func _bg_forest(c: Node2D):
+	for y in range(0,int(Globals.VH*0.5),3):
+		var t: float = float(y)/(Globals.VH*0.5)
+		c.draw_rect(Rect2(0,y,Globals.VW,3), Color(0.55+t*0.05,0.82+t*0.04,0.98-t*0.2,0.6))
+	c.draw_rect(Rect2(0,0,Globals.VW,Globals.VH), Color(0.1,0.22,0.08,0.5))
+	for i in 12:
+		var tx: float = i*42.0+8
+		var th: float = 85.0+i%4*22.0
+		c.draw_rect(Rect2(tx-4,Globals.VH-th,8,th), Color(0.22,0.16,0.08))
+		c.draw_circle(Vector2(tx,Globals.VH-th), 26+i%4*8, Color(0.18,0.48,0.1,0.9))
+		c.draw_circle(Vector2(tx-10,Globals.VH-th+10), 18, Color(0.24,0.55,0.12,0.78))
+		c.draw_circle(Vector2(tx+10,Globals.VH-th+8), 20, Color(0.15,0.45,0.08,0.78))
+	for i in 8:
+		var lx: float = 32.0+i*56.0
+		c.draw_line(Vector2(lx,0),Vector2(lx+sin(time*0.5+i)*12,Globals.VH*0.58),Color(0.28,0.52,0.12,0.62),2.0)
+	for i in 14:
+		var fx: float = 18.0+i*34.0
+		var fy: float = Globals.VH*0.6+sin(i*1.3)*14.0
+		c.draw_circle(Vector2(fx,fy), 4.5, Color(1,0.38,0.62,0.92))
+		c.draw_circle(Vector2(fx,fy), 2.0, Color(1,0.92,0.2))
+		
+func _bg_storm(c: Node2D):
+	for y in range(0,int(Globals.VH),4):
+		var t: float = float(y)/Globals.VH
+		c.draw_rect(Rect2(0,y,Globals.VW,4), Color(0.1+t*0.06,0.12+t*0.08,0.2+t*0.06))
+	for cl in clouds:
+		_draw_cloud(c, cl.x, cl.y, cl.w*1.35, cl.a*0.78)
+		_draw_cloud(c, cl.x+22, cl.y+12, cl.w, cl.a*0.62)
+	for i in 3:
+		if sin(time*5.0+i*2.1)>0.85:
+			var lx: float = 78.0+i*148.0
+			c.draw_line(Vector2(lx,0),Vector2(lx+14,52),Color(0.92,0.92,1.0,0.92),2.0)
+			c.draw_line(Vector2(lx+14,52),Vector2(lx-4,102),Color(0.92,0.92,1.0,0.92),2.0)
+			c.draw_line(Vector2(lx-4,102),Vector2(lx+12,152),Color(0.92,0.92,1.0,0.92),2.0)
+			c.draw_circle(Vector2(lx,0), 8, Color(1,1,0.8,0.42))
+	for i in 32:
+		var rx: float = fmod(time*82.0+i*17.0, Globals.VW)
+		var ry: float = fmod(time*124.0+i*22.0, Globals.VH)
+		c.draw_line(Vector2(rx,ry),Vector2(rx-3,ry+12),Color(0.5,0.65,0.95,0.58),1.0)
+		
+func _bg_tundra(c: Node2D):
+	for y in range(0,int(Globals.VH),3):
+		var t: float = float(y)/Globals.VH
+		c.draw_rect(Rect2(0,y,Globals.VW,3), Color(0.62+t*0.1,0.72+t*0.08,0.88+t*0.04))
+	var mtns = [[0,142,165],[118,98,138],[248,115,148],[385,92,128],[445,132,85]]
+	for m in mtns:
+		var mtn_colors = PackedColorArray([Color(0.75,0.8,0.92), Color(0.75,0.8,0.92), Color(0.75,0.8,0.92)])
+		c.draw_polygon(PackedVector2Array([Vector2(m[0],m[1]),Vector2(m[0]-m[2]*0.6,Globals.VH*0.58),Vector2(m[0]+m[2]*0.6,Globals.VH*0.58)]), mtn_colors)
+		var snow_colors = PackedColorArray([Color(0.95,0.97,1.0), Color(0.95,0.97,1.0), Color(0.95,0.97,1.0)])
+		c.draw_polygon(PackedVector2Array([Vector2(m[0],m[1]),Vector2(m[0]-m[2]*0.22,m[1]+m[2]*0.3),Vector2(m[0]+m[2]*0.22,m[1]+m[2]*0.3)]), snow_colors)
+	for i in 28:
+		var sx: float = fmod(time*6.5+i*20.0+sin(time+i)*8.0, Globals.VW)
+		var sy: float = fmod(time*10.5+i*14.0, Globals.VH)
+		c.draw_circle(Vector2(sx,sy), 1.5+i%3*0.5, Color(1,1,1,0.68))
+
+func _bg_desert(c: Node2D):
+	for y in range(0,int(Globals.VH*0.58),3):
+		var t: float = float(y)/(Globals.VH*0.58)
+		c.draw_rect(Rect2(0,y,Globals.VW,3), Color(0.98-t*0.1,0.72-t*0.15,0.22+t*0.05))
+	c.draw_rect(Rect2(0,Globals.VH*0.58,Globals.VW,Globals.VH*0.42), Color(0.88,0.75,0.45))
+	# Дюны
+	for i in 5:
+		var dx: float = i*100.0
+		var dh: float = Globals.VH*0.4+sin(i*0.8)*14
+		var dune_colors = PackedColorArray([Color(0.88,0.75,0.45), Color(0.88,0.75,0.45), Color(0.88,0.75,0.45)])
+		c.draw_polygon(PackedVector2Array([Vector2(dx,Globals.VH),Vector2(dx+100,Globals.VH),Vector2(dx+50,dh)]), dune_colors)
+	# Кактусы
+	for i in 4:
+		var cx: float = 52.0+i*118.0
+		var ch: float = 38.0+i%3*12.0
+		c.draw_rect(Rect2(cx-5,Globals.VH*0.58-ch,10,ch),Color(0.24,0.54,0.16))
+		c.draw_rect(Rect2(cx-17,Globals.VH*0.58-ch*0.65,12,5),Color(0.24,0.54,0.16))
+		c.draw_rect(Rect2(cx+5,Globals.VH*0.58-ch*0.55,12,5),Color(0.24,0.54,0.16))
+	c.draw_circle(Vector2(405,38), 22, Color(1,0.9,0.3,0.96))
+	c.draw_circle(Vector2(405,38), 34, Color(1,0.9,0.3,0.26))
