@@ -375,3 +375,36 @@ func draw_platform(c: Node2D, plat: Dictionary, map_bg: int, anim_time: float) -
 	c.draw_rect(Rect2(sr.position.x,sr.position.y,sr.size.x,sr.size.y*0.22), Color(1,1,1,0.07))
 	c.draw_line(Vector2(sr.position.x,sr.position.y),
 				Vector2(sr.position.x+sr.size.x,sr.position.y), tc, 2.8)
+
+
+func draw_lava(c: Node2D, lava_y: float, lava_wave: float) -> void:
+	if Globals.VH - lava_y <= 0: return
+
+	var glow_h : float = 14.0
+	c.draw_rect(Rect2(0, lava_y - glow_h, Globals.VW, glow_h), Color(1,0.42,0.05,0.22))
+	c.draw_rect(Rect2(0, lava_y, Globals.VW, Globals.VH - lava_y), Color(0.88,0.26,0.0))
+
+	var segs : Array = Mapgen.marching_squares_lava(lava_y, lava_wave)
+	for seg in segs:
+		c.draw_line(seg.a, seg.b, Color(1.0, 0.82, 0.22, 0.9), 2.0)
+
+	for i in 6:
+		var bx : float = fmod(lava_wave * 28.0 + float(i)*82.0, Globals.VW)
+		var by : float = lava_y - 2.5 + sin(lava_wave*1.5 + float(i))*2.0
+		c.draw_circle(Vector2(bx, by), 2.8, Color(1,0.72,0.18,0.7))
+
+func draw_king_zone(c: Node2D, king_rect: Rect2, p1_in: bool, p2_in: bool, kt: Array) -> void:
+	var zcol : Color = Color(1,1,0,0.12)
+	if p1_in and not p2_in: zcol=Color(Globals.C_P1.r,Globals.C_P1.g,Globals.C_P1.b,0.28)
+	elif p2_in and not p1_in: zcol=Color(Globals.C_P2.r,Globals.C_P2.g,Globals.C_P2.b,0.28)
+	c.draw_rect(king_rect, zcol)
+	c.draw_rect(king_rect, Color(1,1,0,0.35+abs(sin(time*3.2))*0.38), false, 1.8)
+	var cx : float = king_rect.position.x + king_rect.size.x/2.0
+	var cy : float = king_rect.position.y + king_rect.size.y/2.0
+	c.draw_string(ThemeDB.fallback_font, Vector2(cx, cy+5),
+				  "♛", HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color(1,0.9,0.2,0.52))
+	var by_ : float = king_rect.position.y - 14
+	c.draw_string(ThemeDB.fallback_font, Vector2(king_rect.position.x+2, by_),
+				  "%.1f" % float(kt[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Globals.C_P1)
+	c.draw_string(ThemeDB.fallback_font, Vector2(king_rect.position.x+king_rect.size.x-2, by_),
+				  "%.1f" % float(kt[1]), HORIZONTAL_ALIGNMENT_RIGHT, -1, 10, Globals.C_P2)
