@@ -26,6 +26,7 @@ Globals="*res://scripts/globals.gd"
 Maps="*uid://behndaff4jcpv"
 Renderer="*uid://d4bp4us30itgo"
 Mapgen="*uid://bdb6gt1cubao1"
+Backgrounds="*uid://crw5r0wkahujb"
 
 [display]
 
