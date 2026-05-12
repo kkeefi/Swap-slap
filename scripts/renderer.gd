@@ -408,3 +408,114 @@ func draw_king_zone(c: Node2D, king_rect: Rect2, p1_in: bool, p2_in: bool, kt: A
 				  "%.1f" % float(kt[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Globals.C_P1)
 	c.draw_string(ThemeDB.fallback_font, Vector2(king_rect.position.x+king_rect.size.x-2, by_),
 				  "%.1f" % float(kt[1]), HORIZONTAL_ALIGNMENT_RIGHT, -1, 10, Globals.C_P2)
+
+
+func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
+			  mode: int, chaos_timer: float, chaos_interval: float,
+			  menu_blink: float, is_bot: bool, game_time: float,
+			  players: Array) -> void:
+	var font : Font  = ThemeDB.fallback_font
+	var VW   : float = Globals.VW
+	var VH   : float = Globals.VH
+
+	c.draw_rect(Rect2(0,0,VW,24), Color(0,0,0,0.80))
+	c.draw_line(Vector2(0,24), Vector2(VW,24), Color(1,1,1,0.08), 1.0)
+
+	_hud_badge(c, font, 3, 2, 1, scores[0], false)
+	_hud_badge(c, font, VW-83, 2, 2, scores[1], is_bot)
+
+	if mode != Globals.Mode.CHAOS:
+		var bw : float  = 85.0; var bh : float = 7.0; var by_ : float = 6.0
+		var b1x : float = 88.0; var b2x : float = VW - 88.0 - bw
+		for i in 2:
+			var bx : float  = b1x if i==0 else b2x
+			var sc : float  = float(swap_charge[i])
+			var rdy : bool  = bool(swap_ready[i])
+			c.draw_rect(Rect2(bx, by_, bw, bh), Color(0.08,0.08,0.18))
+			var fc : Color  = Globals.C_P1 if i==0 else Globals.C_P2
+			if rdy: fc = Globals.C_GOLD
+			c.draw_rect(Rect2(bx, by_, bw*sc, bh), Color(fc.r,fc.g,fc.b, 0.72+abs(sin(menu_blink*5))*0.28 if rdy else 0.9))
+			c.draw_rect(Rect2(bx,by_,bw,bh), Color(0.3,0.3,0.5,0.5), false, 0.5)
+			var lbl : String
+			if rdy:
+				lbl = "P1:[E] ОБМЕН!" if i==0 else ("🤖 ОБМЕН!" if is_bot else "P2:[↵] ОБМЕН!")
+				if abs(sin(menu_blink*5))>0.3:
+					c.draw_string(font, Vector2(bx+bw/2, by_+16), lbl,
+								  HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Globals.C_GOLD)
+			else:
+				lbl = "P1 обмен" if i==0 else ("БОТ обмен" if is_bot else "P2 обмен")
+				c.draw_string(font, Vector2(bx+bw/2, by_+16), lbl,
+							  HORIZONTAL_ALIGNMENT_CENTER, -1, 6, Color(0.45,0.50,0.60))
+		c.draw_string(font, Vector2(VW/2, 15), "⇄",
+					  HORIZONTAL_ALIGNMENT_CENTER, -1, 11, Color(0.45,0.45,0.55))
+	else:
+		c.draw_string(font, Vector2(VW/2, 15),
+					  "⚡ ХАОС %.1fs" % max(0.0, chaos_interval-chaos_timer),
+					  HORIZONTAL_ALIGNMENT_CENTER, -1, 8, Color(1,0.6,0.2))
+
+	for p in players:
+		if p.dead: continue
+		var pcd : float = float(p.push_cd)
+		if pcd > 0.0:
+			var bw2  : float = 24.0
+			var fill : float = 1.0 - pcd / Globals.PUSH_CD
+			var bx2  : float = float(p.pos.x) - bw2/2.0
+			var by2  : float = float(p.pos.y) + 15.0
+			c.draw_rect(Rect2(bx2, by2, bw2, 3), Color(0.1,0.1,0.2))
+			c.draw_rect(Rect2(bx2, by2, bw2*fill, 3),
+						Globals.C_P1 if p.id==1 else Globals.C_P2)
+			c.draw_rect(Rect2(bx2, by2, bw2, 3), Color(0.3,0.3,0.5,0.4), false, 0.5)
+
+	if game_time > 0:
+		var mi  : int = int(game_time) / 60
+		var sec : int = int(game_time) % 60
+		c.draw_string(font, Vector2(VW/2, 26),
+					  "%d:%02d" % [mi, sec],
+					  HORIZONTAL_ALIGNMENT_CENTER, -1, 8, Color(0.7,0.7,0.82,0.8))
+
+	c.draw_string(font, Vector2(4, VH-3),
+				  "WASD · Пробел=удар · E=обмен",
+				  HORIZONTAL_ALIGNMENT_LEFT, -1, 6,
+				  Color(Globals.C_P1.r,Globals.C_P1.g,Globals.C_P1.b,0.55))
+	if not is_bot:
+		c.draw_string(font, Vector2(VW-4, VH-3),
+					  "↑←↓→ · ↓=удар · Enter=обмен",
+					  HORIZONTAL_ALIGNMENT_RIGHT, -1, 6,
+					  Color(Globals.C_P2.r,Globals.C_P2.g,Globals.C_P2.b,0.55))
+	else:
+		var diff_name : String = Globals.DIFF_NAMES[Globals.bot_difficulty]
+		var diff_col  : Color  = Globals.DIFF_COLORS[Globals.bot_difficulty]
+		c.draw_string(font, Vector2(VW-4, VH-3),
+					  "🤖 " + diff_name,
+					  HORIZONTAL_ALIGNMENT_RIGHT, -1, 6,
+					  Color(Globals.C_P2.r,Globals.C_P2.g,Globals.C_P2.b,0.55))
+		c.draw_rect(Rect2(VW-83, 22, 42, 5),
+					Color(diff_col.r,diff_col.g,diff_col.b,0.75))
+		c.draw_string(font, Vector2(VW-82, 27), diff_name,
+					  HORIZONTAL_ALIGNMENT_LEFT, -1, 5, Color(0,0,0,0.88))
+	c.draw_string(font, Vector2(VW/2, VH-3), "ESC=меню",
+				  HORIZONTAL_ALIGNMENT_CENTER, -1, 6, Color(0.30,0.30,0.40))
+
+func _hud_badge(c: Node2D, font: Font, x: float, y: float,
+				pid: int, score: int, is_bot: bool) -> void:
+	var col : Color = Globals.C_P1 if pid==1 else Globals.C_P2
+	c.draw_rect(Rect2(x, y, 80, 20), Color(col.r,col.g,col.b,0.18))
+	c.draw_rect(Rect2(x, y, 80, 20), Color(col.r,col.g,col.b,0.48), false, 1.0)
+	var lbl : String = ("🤖" if is_bot else "") + "P%d" % pid
+	c.draw_string(font, Vector2(x+4, y+13), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, col)
+	for i in 3:
+		var sc : Color = col if i < score else Color(0.22,0.22,0.22,0.4)
+		c.draw_string(font, Vector2(x+46+i*11, y+13), "★",
+					  HORIZONTAL_ALIGNMENT_LEFT, -1, 9, sc)
+
+
+func draw_announcement(c: Node2D, text: String, timer: float, color: Color) -> void:
+	var alpha : float = clamp(timer, 0.0, 1.0)
+	if timer > 99.0: alpha = 1.0
+	if alpha <= 0.0: return
+	var ay : float = Globals.VH/2.0 - 18.0
+	c.draw_rect(Rect2(40, ay-5, Globals.VW-80, 26), Color(0,0,0,alpha*0.68))
+	c.draw_rect(Rect2(40, ay-5, Globals.VW-80, 26), Color(color.r,color.g,color.b,alpha*0.20), false, 1.0)
+	c.draw_string(ThemeDB.fallback_font, Vector2(Globals.VW/2-85, ay),
+				  text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
+				  Color(color.r,color.g,color.b,alpha))
