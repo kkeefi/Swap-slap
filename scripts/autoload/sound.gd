@@ -4,6 +4,12 @@ const SR := 22050.0
 const POOL := 8
 
 var _pool  : Array = []
+var _music : bool  = false
+var _beat  : float = 0.0
+var _step  : int   = 0
+var _bstep : int   = 0
+var _pat   : Array = []
+var _bpat  : Array = []
 const BPM  := 138.0
 
 func _ready():
@@ -142,6 +148,42 @@ func play_menu_confirm():
 	_tone(380, 0.07, "sine", 0.19, 0.005, 480)
 	await get_tree().create_timer(0.07).timeout
 	_tone(570, 0.10, "sine", 0.19, 0.005, 660)
+	
+func start_music(mode: int):
+	_music = true
+	_beat = 0.0
+	_step = 0
+	_bstep = 0
+	match mode:
+		0: _pat = [220,0,262,0,196,0,220,0,262,0,220,0,294,0,262,0]
+		1: _pat = [196,0,220,0,175,0,196,0,220,0,175,0,147,0,175,0]
+		2: _pat = [110,0,131,0,147,0,110,0,98,0,110,0,131,0,98,0]
+		3: _pat = [330,0,294,0,330,0,349,0,392,0,349,0,330,0,294,0]
+		4: _pat = [440,0,392,0,466,0,415,0,440,0,392,0,523,0,440,0]
+		_: _pat = [220,0,262,0,196,0,220,0,262,0,220,0,294,0,262,0]
+	
+	_bpat = []
+	for n in _pat:
+		_bpat.append(int(n / 2.0) if n > 0 else 0)
 
-func _process(delta: float) -> void:
-	pass
+func stop_music():
+	_music = false
+
+func _process(delta: float):
+	if not _music:
+		return
+	_beat += delta
+	var dur: float = 60.0 / BPM / 2.0
+	if _beat >= dur:
+		_beat -= dur
+		var n_val: int = _pat[_step % _pat.size()]
+		_step += 1
+		if n_val > 0:
+			var n: float = float(n_val)
+			_tone(n, dur * 0.62, "tri", 0.09, 0.005, n * 0.988)
+		if _step % 2 == 0:
+			var b_val: int = _bpat[_bstep % _bpat.size()]
+			_bstep += 1
+			if b_val > 0:
+				var b: float = float(b_val)
+				_tone(b, dur * 1.2, "saw", 0.07, 0.02, b * 0.99, 0.05)
