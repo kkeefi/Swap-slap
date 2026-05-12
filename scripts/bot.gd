@@ -252,6 +252,88 @@ func _can_jump_between(a: Vector2, b: Vector2) -> bool:
 	if dy < -JUMP_H_MAX * 2: return false
 	return true
 
-func _update_hard(_d, _b, _e, _p, _m, _k, _l, _s) -> void: pass
-func _lava_survive(_b, _p, _l) -> void: pass
-func _king_logic(_b, _e, _k) -> void: pass
+func _update_hard(delta: float, bot: Dictionary, enemy: Dictionary,
+		platforms: Array, mode: int, king_rect: Rect2,
+		lava_y: float, swap_ready_bot: bool) -> void:
+
+	_update_medium(delta, bot, enemy, platforms, mode, king_rect, lava_y, swap_ready_bot)
+
+	var bp: Vector2 = bot.pos
+	var ep: Vector2 = enemy.pos
+	var dist: float = bp.distance_to(ep)
+	var dx: float = ep.x - bp.x
+
+	if dist < REACT_DIST + 20:
+		push = true
+
+	if bot.on_floor and abs(ep.y - bp.y) > 15 and _jump_cd <= 0:
+		jump = true
+		_jump_cd = 0.35
+
+	if abs(dx) > 10:
+		if dx > 0: right = true
+		else: left = true
+
+func _lava_survive(bot: Dictionary, platforms: Array, lava_y: float) -> void:
+	var bp : Vector2 = bot.pos
+	var best_x : float = Globals.VW / 2.0
+	var best_y : float = Globals.VH
+	for pl in platforms:
+		if not pl.alive: continue
+		var r : Rect2 = pl.rect
+		if r.position.y < best_y and r.position.y < lava_y - 20:
+			best_y = r.position.y
+			best_x = r.get_center().x
+	var dx : float = best_x - bp.x
+	if abs(dx) > 10:
+		if dx > 0: right = true
+		else: left = true
+	if bot.on_floor and _jump_cd <= 0:
+		if lava_y - (bp.y + Globals.PH) < 50 or best_y < bp.y - 20:
+			jump = true; _jump_cd = 0.5
+
+func _king_logic(bot: Dictionary, enemy: Dictionary, king_rect: Rect2) -> void:
+	var bp : Vector2 = bot.pos
+	var ep : Vector2 = enemy.pos
+	var zone_cx : float = king_rect.position.x + king_rect.size.x / 2.0
+	var in_zone : bool = _in_rect(bp, king_rect)
+	var en_in : bool = _in_rect(ep, king_rect)
+
+	if in_zone:
+		if en_in:
+			var dx : float = ep.x - bp.x
+			if dx > 0: right = true
+			else: left = true
+			push = true
+	else:
+		var dx : float = zone_cx - bp.x
+		if abs(dx) > 10:
+			if dx > 0: right = true
+			else: left = true
+		if bot.on_floor and ep.y < bp.y - 20 and _jump_cd <= 0:
+			jump = true; _jump_cd = 0.5
+
+	if not in_zone and en_in and bp.distance_to(ep) < REACT_DIST:
+		push = true
+
+func _in_rect(pos: Vector2, r: Rect2) -> bool:
+	return pos.x >= r.position.x and pos.x <= r.position.x + r.size.x and \
+		   pos.y >= r.position.y and pos.y <= r.position.y + r.size.y
+		
+func get_h() -> float:
+	return (1.0 if right else 0.0) - (1.0 if left else 0.0)
+
+func get_jump_down(_just: bool) -> bool:
+	var j : bool = jump
+	jump = false
+	return j
+
+func get_push_down() -> bool:
+	var p : bool = push
+	push = false
+	return p
+
+func get_swap_down() -> bool:
+	var s : bool = swap
+	swap = false
+	return s
