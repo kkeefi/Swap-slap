@@ -126,27 +126,132 @@ func _exec_easy_state(bp: Vector2, ep: Vector2, dist: float, bot: Dictionary) ->
 			if bot.on_floor and _jump_cd <= 0:
 				jump = true; _jump_cd = 0.5
 				
-func _update_medium(_d, _b, _e, _p, _m, _k, _l, _s) -> void: pass
+func _update_medium(delta: float, bot: Dictionary, enemy: Dictionary,
+		platforms: Array, mode: int, king_rect: Rect2,
+		lava_y: float, swap_ready_bot: bool) -> void:
+
+	var bp : Vector2 = bot.pos
+	var ep : Vector2 = enemy.pos
+
+	if swap_ready_bot and (ep.x < 80 or ep.x > Globals.VW - 80):
+		swap = true
+
+	if mode == Globals.Mode.LAVA: _lava_survive(bot, platforms, lava_y); return
+	if mode == Globals.Mode.KING: _king_logic(bot, enemy, king_rect); return
+
+	var predicted_ep : Vector2 = ep + enemy.vel * 0.25
+	predicted_ep.x = clamp(predicted_ep.x, 0, Globals.VW)
+	predicted_ep.y = clamp(predicted_ep.y, 0, Globals.VH)
+	var dist_pred : float = bp.distance_to(predicted_ep)
+
+	_path_cd -= delta
+	if _path_cd <= 0 or _astar_path.is_empty():
+		_path_cd = PATH_RETHINK
+		_astar_path = _astar_find_path(bp, predicted_ep, platforms)
+
+	if not _astar_path.is_empty():
+		var nxt : Vector2 = _astar_path[0]
+		if bp.distance_to(nxt) < 20:
+			_astar_path.pop_front()
+		else:
+			var dx : float = nxt.x - bp.x
+			if abs(dx) > 8:
+				if dx > 0: right = true
+				else: left = true
+			if (nxt.y < bp.y - 18) and bot.on_floor and _jump_cd <= 0:
+				jump = true; _jump_cd = 0.45
+
+	if _astar_path.is_empty():
+		var dx : float = ep.x - bp.x
+		if abs(dx) > 15:
+			if dx > 0: right = true
+			else: left = true
+
+	if bot.on_floor and ep.y < bp.y - 25 and _jump_cd <= 0:
+		jump = true
+		_jump_cd = 0.45
+
+	if dist_pred < REACT_DIST:
+		push = true
+
+	if (bp.x < 60 or bp.x > Globals.VW - 60) and not bot.on_floor:
+		if bp.x < Globals.VW/2: right = true
+		else: left = true
+
+	if _stuck_timer > 0.4 and bot.on_floor and _jump_cd <= 0:
+		jump = true; _jump_cd = 0.5; _stuck_timer = 0.0
+
+func _astar_find_path(start: Vector2, target: Vector2, platforms: Array) -> Array:
+	var points: Array = []
+	points.append({"pos": start, "type": "start"})
+
+	for pl in platforms:
+		if not pl.alive: continue
+		var r: Rect2 = pl.rect
+		var land_x: float = r.get_center().x
+		var land_y: float = r.position.y - Globals.PH - 2
+		points.append({"pos": Vector2(land_x, land_y), "type": "plat"})
+
+	points.append({"pos": target, "type": "target"})
+
+	var n: int = points.size()
+	if n < 2: return []
+	
+	var edges: Dictionary = {}
+	for i in n:
+		edges[i] = []
+		for j in n:
+			if i == j: continue
+			if _can_jump_between(points[i].pos, points[j].pos):
+				edges[i].append(j)
+
+	var g: Dictionary = {}
+	var f: Dictionary = {}
+	var came_from: Dictionary = {}
+	var open_set: Array = [0]
+
+	for i in n:
+		g[i] = INF
+		f[i] = INF
+
+	g[0] = 0.0
+	f[0] = start.distance_to(target)
+
+	while not open_set.is_empty():
+		var current: int = open_set[0]
+		for idx in open_set:
+			if float(f[idx]) < float(f[current]):
+				current = idx
+
+		if current == n - 1:
+			var path: Array = []
+			var c: int = current
+			while came_from.has(c):
+				path.push_front(points[c].pos)
+				c = came_from[c]
+			return path
+
+		open_set.erase(current)
+
+		for neighbor in edges[current]:
+			var tentative_g: float = float(g[current]) + points[current].pos.distance_to(points[neighbor].pos)
+			if tentative_g < float(g[neighbor]):
+				came_from[neighbor] = current
+				g[neighbor] = tentative_g
+				f[neighbor] = tentative_g + points[neighbor].pos.distance_to(target)
+				if neighbor not in open_set:
+					open_set.append(neighbor)
+
+	return []
+	
+func _can_jump_between(a: Vector2, b: Vector2) -> bool:
+	var dx : float = abs(b.x - a.x)
+	var dy := a.y - b.y
+	if dx > JUMP_DIST_MAX + 20: return false
+	if dy > JUMP_H_MAX + 10: return false
+	if dy < -JUMP_H_MAX * 2: return false
+	return true
+
 func _update_hard(_d, _b, _e, _p, _m, _k, _l, _s) -> void: pass
 func _lava_survive(_b, _p, _l) -> void: pass
 func _king_logic(_b, _e, _k) -> void: pass
-
-
-
-
-
-
-
-
-
-
-
-
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	pass # Replace with function body.
-
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
