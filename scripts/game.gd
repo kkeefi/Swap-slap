@@ -143,7 +143,7 @@ func _draw() -> void:
 func _in_rect(pos: Vector2, r: Rect2) -> bool:
 	return pos.x >= r.position.x and pos.x <= r.position.x + r.size.x and \
 		   pos.y >= r.position.y and pos.y <= r.position.y + r.size.y
-
+		
 
 func _draw_game() -> void:
 	Backgrounds.draw(self, map_bg)
@@ -208,3 +208,37 @@ func _start_match() -> void:
 		lava_speed = map_data.get("lspd", 5.0)
 		
 	scene = Scene.GAME
+
+func _build_platforms(map: Dictionary) -> void:
+	var key : String = "crumble_tiles" if "crumble_tiles" in map else "plats"
+	if key in map:
+		for p in map[key]:
+			var h : float = p[3] if p.size() > 3 else 12.0
+			platforms.append(_plat(float(p[0]), float(p[1]), float(p[2]), h))
+
+
+func _plat(x: float, y: float, w: float, h: float = 12.0) -> Dictionary:
+	return {"rect": Rect2(x - w/2.0, y - h/2.0, w, h),
+			"alive": true, "shake": 0.0, "marked": false}
+
+
+func _make_player(pid: int, sp: Vector2) -> Dictionary:
+	return {
+		"id":         pid,
+		"pos":        sp,
+		"vel":        Vector2.ZERO,
+		"dead":       false,
+		"push_cd":    0.0,
+		"inv_time":   0.0,
+		"flash":      0.0,
+		"has_gloves": false,
+		"has_boots":  false,
+		"on_floor":   false,
+		"face_blink": 0.0,
+		"scale_x":    1.0,
+		"scale_y":    1.0,
+		"punch_anim": 0.0,
+		"facing":     1,
+		"was_on_floor": false,
+		"walk_phase": 0.0
+	}
