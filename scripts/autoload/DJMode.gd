@@ -25,6 +25,7 @@ var debug_on : bool  = false
 var _fps_acc : float = 0.0
 var _fps_cnt : int = 0
 var _fps_val : float = 60.0
+var _bot_state : String = ""
 
 var beat_this_frame : bool = false
 
@@ -160,3 +161,78 @@ func _stop_audio() -> void:
 	for p in _audio_pool:
 		if p.playing: p.stop()
 	for i in 8: eq_levels[i] = 0.0; eq_peak[i] = 0.0
+	
+func draw_visualizer(canvas: Node2D) -> void:
+	if not dj_on: return
+
+	var VW : float = Globals.VW
+	var VH : float = Globals.VH
+	var n : int = 8
+	var bar_w : float = 18.0
+	var bar_gap : float = 3.0
+	var total_w : float = float(n) * (bar_w + bar_gap) - bar_gap
+	var ox : float = VW/2.0 - total_w/2.0
+	var base_y : float = VH - 4.0
+	var max_h : float = 48.0
+
+	canvas.draw_rect(Rect2(ox-5, base_y-max_h-5, total_w+10, max_h+8),
+					 Color(0,0,0,0.58))
+
+	for i in n:
+		var x : float = ox + float(i) * (bar_w + bar_gap)
+		var lv : float = float(eq_levels[i])
+		var pk : float = float(eq_peak[i])
+		var h : float = lv * max_h
+		var ph : float = pk * max_h
+
+		canvas.draw_rect(Rect2(x, base_y-max_h, bar_w, max_h), Color(0.06,0.06,0.10))
+
+		if h > 0.5:
+			var col : Color
+			if lv < 0.5:
+				col = Color(0.05,0.85,0.35).lerp(Color(0.95,0.88,0.08), lv*2.0)
+			else:
+				col = Color(0.95,0.88,0.08).lerp(Color(1.0,0.12,0.12), (lv-0.5)*2.0)
+			canvas.draw_rect(Rect2(x, base_y-h, bar_w, h), col)
+			canvas.draw_rect(Rect2(x, base_y-h, bar_w*0.28, h), Color(1,1,1,0.10))
+
+		if ph > 1.5:
+			canvas.draw_rect(Rect2(x, base_y-ph-2, bar_w, 2), Color(1.0,0.45,0.1,0.92))
+
+	var pulse_alpha : float = 0.72 + sin(dj_time * TAU * (DJ_BPM/60.0)) * 0.28
+	canvas.draw_string(ThemeDB.fallback_font, Vector2(ox, base_y - max_h - 8),
+					   "♪  DJ MODE  ♪", HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
+					   Color(1.0, 0.58, 0.15, pulse_alpha))
+					
+func draw_debug(canvas: Node2D, players: Array, _platforms: Array) -> void:
+	if not debug_on: return
+	var font : Font = ThemeDB.fallback_font
+
+	for p in players:
+		if p.dead: continue
+		var hb_col : Color = Color(1,0,0,0.30) if p.id==2 else Color(0,0.4,1,0.30)
+		var hb_out : Color = Color(1,0,0,0.70) if p.id==2 else Color(0,0.4,1,0.70)
+		var hbr : Rect2 = Rect2(
+			p.pos.x - Globals.PW, p.pos.y - Globals.PH,
+			Globals.PW * 2, Globals.PH * 2)
+		canvas.draw_rect(hbr, hb_col)
+		canvas.draw_rect(hbr, hb_out, false, 1.0)
+
+		var vel_len : float = p.vel.length()
+		if vel_len > 4:
+			var vel_end : Vector2 = p.pos + p.vel * 0.06
+			canvas.draw_line(p.pos, vel_end, Color(1,1,0,0.85), 1.5)
+
+		canvas.draw_string(font, Vector2(p.pos.x - 24, p.pos.y - Globals.PH - 18),
+						   "vx:%.0f vy:%.0f" % [p.vel.x, p.vel.y],
+						   HORIZONTAL_ALIGNMENT_LEFT, -1, 6, Color(1,1,1,0.85))
+		canvas.draw_string(font, Vector2(p.pos.x - 24, p.pos.y - Globals.PH - 10),
+						   "inv:%.2f cd:%.2f" % [float(p.inv_time), float(p.push_cd)],
+						   HORIZONTAL_ALIGNMENT_LEFT, -1, 6, Color(0.8,0.9,0.5,0.85))
+
+	canvas.draw_rect(Rect2(2, 26, 85, 24), Color(0,0,0,0.72))
+	canvas.draw_string(font, Vector2(5, 38), "FPS: %.0f" % _fps_val,
+					   HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.2,1.0,0.2))
+	canvas.draw_string(font, Vector2(5, 48),
+					   "BOT: %s  DEBUG ON" % Globals.DIFF_NAMES[Globals.bot_difficulty],
+					   HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(1,0.8,0.2))
