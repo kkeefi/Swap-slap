@@ -519,3 +519,74 @@ func draw_announcement(c: Node2D, text: String, timer: float, color: Color) -> v
 	c.draw_string(ThemeDB.fallback_font, Vector2(Globals.VW/2-85, ay),
 				  text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
 				  Color(color.r,color.g,color.b,alpha))
+
+
+func draw_result(c: Node2D, winner: int, scores: Array,
+				 celebrate: float, is_bot: bool) -> void:
+	var font: Font = ThemeDB.fallback_font
+	var VW: float = Globals.VW
+	var VH: float = Globals.VH
+	var bob: float = sin(celebrate*1.8)*5.0
+	var box_y: float = 55.0 + bob
+	var bw: float = VW - 110.0; var bx : float = 55.0
+	var wc: Color = Globals.C_P1 if winner==1 else Globals.C_P2
+
+	c.draw_rect(Rect2(bx, box_y-4, bw, 100), Color(0,0,0,0.78))
+	c.draw_rect(Rect2(bx, box_y-4, bw, 100), Color(wc.r,wc.g,wc.b,0.14))
+	c.draw_rect(Rect2(bx, box_y-4, bw, 100), wc, false, 2.0)
+
+	c.draw_string(font, Vector2(bx+bw/2-6, box_y+18),
+				  "★", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Globals.C_GOLD)
+	var wt : String = "ПОБЕДА!" if winner==1 or not is_bot else "БОТ ПОБЕДИЛ!"
+	c.draw_string(font, Vector2(bx+16, box_y+48),
+				  wt, HORIZONTAL_ALIGNMENT_LEFT, -1, 21, wc)
+	var who : String = "Игрок %d" % winner if (winner==1 or not is_bot) else "🤖 Бот"
+	c.draw_string(font, Vector2(bx+16, box_y+66),
+				  who, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color.WHITE)
+	c.draw_string(font, Vector2(bx+16, box_y+84),
+				  "Счёт:  P1  %d — %d  P2" % [scores[0],scores[1]],
+				  HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.72,0.72,0.72))
+	c.draw_string(font, Vector2(VW/2-80, VH-18),
+				  "Нажми Пробел или Enter — в выбор режима",
+				  HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
+				  Color(0.7,0.7,0.82, abs(sin(celebrate*3.0))))
+
+
+func draw_diff_select(c: Node2D, cursor: int, blink: float) -> void:
+	var font: Font  = ThemeDB.fallback_font
+	var VW: float = Globals.VW
+	var VH: float = Globals.VH
+
+	c.draw_rect(Rect2(0,0,VW,VH), Color(0,0,0,0.55))
+
+	var bx: float = 60.0
+	var by_: float = 70.0
+	var bw: float = VW-120.0
+	var bh: float = 130.0
+	c.draw_rect(Rect2(bx, by_, bw, bh), Color(0.06,0.07,0.14,0.95))
+	c.draw_rect(Rect2(bx, by_, bw, bh), Globals.C_GOLD, false, 1.5)
+
+	c.draw_string(font, Vector2(VW/2, by_+16),
+				  "ВЫБОР СЛОЖНОСТИ БОТА", HORIZONTAL_ALIGNMENT_CENTER, -1, 11, Globals.C_GOLD)
+	c.draw_line(Vector2(bx+8,by_+22), Vector2(bx+bw-8,by_+22),
+				Color(Globals.C_GOLD.r,Globals.C_GOLD.g,Globals.C_GOLD.b,0.3), 0.8)
+
+	var labels : Array = ["🟢  ЛЕГКО   — бот медленный, делает ошибки",
+						  "🟡  СРЕДНИЙ — A* поиск, предсказывает позицию",
+						  "🔴  СЛОЖНО  — MCTS, просчитывает несколько ходов"]
+
+	for i in 3:
+		var sel: bool  = i == cursor
+		var iy: float = by_ + 34.0 + float(i)*28.0
+		var dcol: Color = Globals.DIFF_COLORS[i]
+		if sel:
+			c.draw_rect(Rect2(bx+6,iy-3,bw-12,22), Color(dcol.r,dcol.g,dcol.b,0.12+abs(sin(blink*4))*0.08))
+			c.draw_string(font, Vector2(bx+20+sin(blink*5)*2,iy+12),
+						  "►", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Globals.C_GOLD)
+		c.draw_string(font, Vector2(bx+32,iy+12),
+					  labels[i] as String, HORIZONTAL_ALIGNMENT_LEFT, -1, 9,
+					  Color.WHITE if sel else Color(0.55,0.55,0.65))
+
+	c.draw_string(font, Vector2(VW/2, by_+bh+8),
+				  "W/S ↑↓ — выбор    Enter/Пробел — подтвердить    ESC — назад",
+				  HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Color(0.30,0.30,0.40))
