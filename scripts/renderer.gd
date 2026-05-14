@@ -590,3 +590,9 @@ func draw_diff_select(c: Node2D, cursor: int, blink: float) -> void:
 	c.draw_string(font, Vector2(VW/2, by_+bh+8),
 				  "W/S ↑↓ — выбор    Enter/Пробел — подтвердить    ESC — назад",
 				  HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Color(0.30,0.30,0.40))
+
+func draw_visualizer(c: Node2D) -> void:
+	DjMode.draw_visualizer(c)
+
+func draw_debug_overlay(c: Node2D, players: Array, platforms: Array) -> void:
+	DjMode.draw_debug(c, players, platforms)
