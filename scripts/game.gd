@@ -242,3 +242,54 @@ func _make_player(pid: int, sp: Vector2) -> Dictionary:
 		"was_on_floor": false,
 		"walk_phase": 0.0
 	}
+
+func _start_game() -> void:
+	game_active = true
+	game_time   = 0.0
+	particles.clear()
+	platforms.clear()
+	gloves_alive = false
+	gloves_timer = randf_range(4.0, 10.0)
+	boots_alive  = false
+	boots_timer  = randf_range(8.0, 16.0)
+	king_time    = [0.0, 0.0]
+	crumble_accum = 0.0
+	swap_flash_alpha = 0.0
+	chaos_timer      = 0.0
+	chaos_interval   = randf_range(4.0, 6.0)
+	announce_text    = ""
+	announce_timer   = 0.0
+	swap_charge  = [0.0, 0.0]
+	swap_ready   = [false, false]
+	controllers  = [1, 2]
+	danger_flash = 0.0
+	Bot.reset()
+
+	var map : Dictionary = Mapgen.generate(Globals.selected_mode)
+	if Globals.forced_bg >= 0:
+		map_bg = Globals.forced_bg
+		map["bg"] = map_bg
+	else:
+		map_bg = map.get("bg", randi()%11)
+	_build_platforms(map)
+
+	players = [
+		_make_player(1, Vector2(float(map["p1"][0]), float(map["p1"][1]))),
+		_make_player(2, Vector2(float(map["p2"][0]), float(map["p2"][1])))
+	]
+
+	match Globals.selected_mode:
+		Globals.Mode.LAVA:
+			lava_y     = float(map.get("ls",   252.0))
+			lava_speed = float(map.get("lspd",   4.0))
+			lava_wave  = 0.0
+		Globals.Mode.KING:
+			var z : Array = map["zone"]
+			king_rect  = Rect2(float(z[0]), float(z[1]), float(z[2]), float(z[3]))
+			king_moves = map.get("zone_moves", false)
+			king_move_dir = 1
+		Globals.Mode.CRUMBLING:
+			crumble_interval = 1.8
+
+	scene = Scene.GAME
+	Sound.start_music(Globals.selected_mode)
