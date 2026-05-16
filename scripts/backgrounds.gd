@@ -19,9 +19,29 @@ func _gen_clouds():
 	for i in 7:
 		clouds.append({"x":randf()*Globals.VW,"y":randf_range(18.0,95.0),
 			"w":randf_range(38.0,90.0),"spd":randf_range(4.0,14.0),"a":randf_range(0.38,0.82)})
+			
+var _hit_flash : float = 0.0
+var _death_flash : float = 0.0
+var _death_col : Color = Color(1,0,0)
+var _sparks : Array = []
+
+func on_hit() -> void:
+	_hit_flash=0.22
+
+func on_death(col:Color) -> void:
+	_death_flash=0.32; _death_col=col
+	for i in 16:
+		var a:float=randf()*TAU; var s:float=randf_range(40.0,130.0)
+		_sparks.append({"pos":Vector2(randf()*Globals.VW,randf()*Globals.VH),"vel":Vector2(cos(a)*s,sin(a)*s),"life":randf_range(0.4,0.9),"col":col})
 
 func update(delta: float):
 	time += delta
+	if _hit_flash>0: _hit_flash  =max(0.0,_hit_flash-delta*6.0)
+	if _death_flash>0: _death_flash=max(0.0,_death_flash-delta*4.0)
+	for i in range(_sparks.size()-1,-1,-1):
+		var sp:Dictionary=_sparks[i]; sp.life-=delta
+		sp.pos+=sp.vel*delta; sp.vel.y+=200.0*delta
+		if sp.life<=0: _sparks.remove_at(i)
 	for c in clouds:
 		c.x += c.spd * delta
 		if c.x > Globals.VW + 65: c.x = -95.0
@@ -40,6 +60,17 @@ func draw(canvas: Node2D, bg_id: int):
 		9: _bg_tundra(canvas)
 		10: _bg_desert(canvas)
 		_: _bg_space(canvas)
+	_draw_events(canvas)
+	
+func _draw_events(c:Node2D) -> void:
+	if _hit_flash>0: c.draw_rect(Rect2(0,0,Globals.VW,Globals.VH),Color(1,0.9,0.3,_hit_flash*0.3))
+	if _death_flash>0: c.draw_rect(Rect2(0,0,Globals.VW,Globals.VH),Color(_death_col.r,_death_col.g,_death_col.b,_death_flash*0.25))
+	for sp in _sparks:
+		var a:float=clamp(sp.life*3.0,0.0,1.0)
+		c.draw_circle(sp.pos,3.5*a,Color(sp.col.r,sp.col.g,sp.col.b,a))
+	if Globals.dj_mode:
+		var pulse:float=abs(sin(time*TAU*2.14))*0.10
+		c.draw_rect(Rect2(0,0,Globals.VW,Globals.VH),Color(0.5,0.1,0.9,pulse))
 
 func _draw_cloud(c: Node2D, x: float, y: float, w: float, a: float):
 	var col := Color(1,1,1,a)
@@ -224,13 +255,11 @@ func _bg_desert(c: Node2D):
 		var t: float = float(y)/(Globals.VH*0.58)
 		c.draw_rect(Rect2(0,y,Globals.VW,3), Color(0.98-t*0.1,0.72-t*0.15,0.22+t*0.05))
 	c.draw_rect(Rect2(0,Globals.VH*0.58,Globals.VW,Globals.VH*0.42), Color(0.88,0.75,0.45))
-	# Дюны
 	for i in 5:
 		var dx: float = i*100.0
 		var dh: float = Globals.VH*0.4+sin(i*0.8)*14
 		var dune_colors = PackedColorArray([Color(0.88,0.75,0.45), Color(0.88,0.75,0.45), Color(0.88,0.75,0.45)])
 		c.draw_polygon(PackedVector2Array([Vector2(dx,Globals.VH),Vector2(dx+100,Globals.VH),Vector2(dx+50,dh)]), dune_colors)
-	# Кактусы
 	for i in 4:
 		var cx: float = 52.0+i*118.0
 		var ch: float = 38.0+i%3*12.0
