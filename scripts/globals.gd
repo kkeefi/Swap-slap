@@ -33,10 +33,10 @@ const MODE_DESCS: Array = [
 ]
 const MODE_ICONS : Array = ["🥊","🧱","🌋","🏔","⚡"]
 
-enum BotDifficulty { EASY=0, MEDIUM=1, HARD=2 }
+enum BotDifficulty { EASY=0, MEDIUM=1, HARD=2, AI=3 }
 var bot_difficulty: int = BotDifficulty.MEDIUM
-const DIFF_NAMES: Array = ["EASY","MEDIUM","HARD"]
-const DIFF_COLORS: Array = [Color(0.3,0.9,0.3), Color(0.9,0.85,0.3), Color(0.9,0.3,0.3)]
+const DIFF_NAMES : Array = ["EASY","MEDIUM","HARD","ИИ"]
+const DIFF_COLORS: Array = [Color(0.3,0.9,0.3), Color(0.9,0.85,0.3), Color(0.9,0.3,0.3), Color(0.7,0.2,1.0)]
 
 var player_count: int = 2
 var selected_mode: int = 0
@@ -47,8 +47,11 @@ var forced_bg: int = -1
 var debug_mode: bool = false
 var dj_mode: bool = false
 
+var match_stats : Dictionary = {"hits":[0,0],"deaths":[0,0],"pickups":[0,0]}
+
 func reset_scores() -> void:
 	scores = [0, 0]
+	match_stats = {"hits":[0,0],"deaths":[0,0],"pickups":[0,0]}
 
 static func draw_ellipse(canvas: Node2D, center: Vector2,
 		rx: float, ry: float, color: Color, segs: int = 12) -> void:
