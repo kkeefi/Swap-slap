@@ -12,24 +12,87 @@ const JUMP_H_MAX : float = 52.0
 const JUMP_DIST_MAX : float = 140.0
 
 enum State { CHASE, ATTACK, RETREAT, SURVIVE, JUMP_TO }
-var _state : int   = State.CHASE
+var _state : int = State.CHASE
 var _jump_cd : float = 0.0
 var _stuck_timer : float = 0.0
 var _last_pos : Vector2 = Vector2.ZERO
 var _dodge_dir : int   = 1
 
 var _easy_think_cd : float = 0.0
-var _easy_random : bool  = false
 
 var _astar_path : Array = []
 var _path_cd : float = 0.0
 const PATH_RETHINK: float = 0.35
 
+const NN_W1 : Array = [
+	[ 0.82,-0.61, 0.44,-0.33, 1.12,-0.78, 0.29,-0.55, 1.45,-0.38, 0.92,-1.14],
+	[-0.55, 0.88,-0.72, 0.61,-0.44, 0.93,-0.81, 0.47,-0.33, 1.28,-0.65, 0.41],
+	[ 1.24,-0.38, 0.91,-0.68, 0.35,-1.15, 0.82,-0.44, 0.67,-0.91, 1.18,-0.52],
+	[-0.33, 1.42,-0.55, 0.88,-0.71, 0.44,-0.92, 1.15,-0.38, 0.63,-0.47, 0.85],
+	[ 0.91,-0.74, 1.18,-0.41, 0.66,-0.82, 1.34,-0.55, 0.48,-1.22, 0.77,-0.39],
+	[-0.48, 0.95,-0.38, 1.24,-0.61, 0.73,-0.44, 0.88,-1.15, 0.32,-0.68, 1.11],
+	[ 1.35,-0.52, 0.78,-0.95, 0.41,-0.66, 1.12,-0.38, 0.84,-0.51, 0.93,-0.72],
+	[-0.72, 1.18,-0.44, 0.65,-1.08, 0.88,-0.32, 1.25,-0.58, 0.42,-0.87, 0.61],
+	[ 0.55,-1.32, 0.88,-0.45, 1.18,-0.62, 0.38,-0.94, 1.21,-0.48, 0.65,-0.88],
+	[-0.88, 0.44,-1.15, 0.78,-0.35, 1.28,-0.68, 0.52,-0.41, 0.95,-1.18, 0.33],
+	[ 1.28,-0.65, 0.42,-0.88, 0.75,-1.12, 0.58,-0.35, 1.14,-0.72, 0.44,-0.91],
+	[-0.41, 1.08,-0.72, 0.55,-0.88, 0.38,-1.24, 0.92,-0.48, 0.68,-0.35, 1.15],
+	[ 0.75,-0.48, 1.22,-0.35, 0.58,-0.92, 0.44,-1.18, 0.88,-0.61, 1.05,-0.42],
+	[-0.92, 0.68,-0.44, 1.15,-0.72, 0.35,-0.88, 0.62,-1.24, 0.48,-0.55, 0.91],
+	[ 0.44,-0.91, 0.68,-1.18, 0.82,-0.38, 1.15,-0.65, 0.35,-0.78, 0.92,-0.51],
+	[-1.15, 0.55,-0.38, 0.88,-0.61, 1.22,-0.44, 0.72,-0.88, 0.38,-1.12, 0.65]
+]
+const NN_B1 : Array = [ 0.12,-0.08, 0.22,-0.15, 0.08,-0.18, 0.25,-0.11, 0.15,-0.22, 0.09,-0.14, 0.18,-0.07, 0.21,-0.16]
+const NN_W2 : Array = [
+	[ 0.88,-0.62, 1.14,-0.45, 0.72,-0.91, 0.55,-0.38, 0.95,-0.68, 0.42,-1.08, 0.78,-0.35, 0.62,-0.88],
+	[-0.55, 1.22,-0.38, 0.91,-0.74, 0.48,-1.12, 0.65,-0.42, 0.88,-0.61, 0.34,-0.95, 1.15,-0.52, 0.71],
+	[ 0.78,-0.44, 0.92,-0.68, 1.18,-0.35, 0.61,-0.88, 0.45,-1.14, 0.72,-0.38, 0.55,-0.92, 1.08,-0.64],
+	[-0.64, 0.95,-0.52, 1.28,-0.41, 0.72,-0.88, 0.35,-0.61, 1.15,-0.78, 0.44,-1.02, 0.58,-0.35, 0.82],
+	[ 0.91,-0.72, 0.48,-0.88, 1.22,-0.55, 0.68,-0.35, 0.82,-0.51, 0.38,-0.95, 0.72,-1.18, 0.44,-0.61],
+	[-0.38, 0.85,-1.12, 0.55,-0.72, 1.18,-0.44, 0.91,-0.65, 0.38,-0.88, 1.25,-0.52, 0.61,-0.78, 0.35],
+	[ 1.18,-0.51, 0.72,-0.38, 0.88,-0.65, 1.02,-0.44, 0.55,-0.92, 0.38,-0.72, 0.85,-0.41, 0.68,-1.08],
+	[-0.72, 1.05,-0.38, 0.62,-0.95, 0.48,-0.68, 1.22,-0.55, 0.38,-0.85, 0.71,-0.44, 0.92,-0.61, 0.35]
+]
+const NN_B2 : Array = [ 0.08,-0.12, 0.15,-0.09, 0.11,-0.18, 0.07,-0.14]
+const NN_W3 : Array = [
+	[ 1.24,-0.58, 0.82,-0.44, 1.08,-0.72, 0.38,-0.91],
+	[-0.88, 1.15,-0.42, 0.72,-0.55, 1.18,-0.65, 0.38],
+	[ 0.72,-0.95, 1.18,-0.38, 0.55,-0.88, 0.42,-1.12],
+	[-0.44, 0.88,-0.72, 1.25,-0.38, 0.65,-0.92, 0.51],
+	[ 0.95,-0.48, 0.68,-0.85, 1.12,-0.35, 0.78,-0.62]
+]
+const NN_B3 : Array = [ 0.18,-0.12, 0.08,-0.15, 0.22]
+
+var _nn_think_t : float = 0.0
+const NN_THINK : float = 0.05
+var _nn_cached : Array = [0.0,0.0,0.0,0.0,0.0]
+
+func _nn_sigmoid(x: float) -> float:
+	return 1.0 / (1.0 + exp(-clamp(x, -10.0, 10.0)))
+
+func _nn_forward(inp: Array) -> Array:
+	var h1 : Array = []
+	for j in 16:
+		var s : float = float(NN_B1[j])
+		for i in 12: s += float(inp[i]) * float(NN_W1[j][i])
+		h1.append(_nn_sigmoid(s))
+	var h2 : Array = []
+	for j in 8:
+		var s : float = float(NN_B2[j])
+		for i in 16: s += float(h1[i]) * float(NN_W2[j][i])
+		h2.append(_nn_sigmoid(s))
+	var out : Array = []
+	for j in 5:
+		var s : float = float(NN_B3[j])
+		for i in 8: s += float(h2[i]) * float(NN_W3[j][i])
+		out.append(_nn_sigmoid(s))
+	return out
+
 func reset() -> void:
 	left=false; right=false; jump=false; push=false; swap=false
 	_state=State.CHASE; _jump_cd=0.0; _stuck_timer=0.0
-	_easy_think_cd=0.0; _easy_random=false
-	_astar_path=[]; _path_cd=0.0
+	_easy_think_cd=0.0; _astar_path=[]; _path_cd=0.0
+	_nn_think_t=0.0; _nn_cached=[0.0,0.0,0.0,0.0,0.0]
 
 func update(delta: float, bot: Dictionary, enemy: Dictionary,
 		platforms: Array, mode: int, king_rect: Rect2,
@@ -79,20 +142,17 @@ func _update_easy(delta: float, bot: Dictionary, enemy: Dictionary,
 		if randf() < 0.2 and bot.on_floor: jump = true
 		return
 
-	var near_edge_self : bool = bp.x < EDGE_DANGER or bp.x > Globals.VW - EDGE_DANGER
-	var near_edge_enemy : bool = ep.x < EDGE_DANGER or ep.x > Globals.VW - EDGE_DANGER
-
-	if near_edge_self and not bot.on_floor:
-		_state = State.RETREAT
-		_dodge_dir = int(-sign(bp.x - Globals.VW/2.0))
-		if _dodge_dir == 0: _dodge_dir = 1
-	elif _stuck_timer > 0.5:
-		_state = State.JUMP_TO; _stuck_timer = 0.0
-	elif dist < REACT_DIST:
-		_state = State.ATTACK
-	else:
-		_state = State.CHASE
-
+	var near_self:bool=bp.x<EDGE_DANGER or bp.x>Globals.VW-EDGE_DANGER
+	if near_self and not bot.on_floor:
+		_state=State.RETREAT 
+		_dodge_dir=int(-sign(bp.x-Globals.VW/2.0))
+		if _dodge_dir==0: _dodge_dir=1
+	elif _stuck_timer>0.5: 
+		_state=State.JUMP_TO; _stuck_timer=0.0
+	elif dist<REACT_DIST: 
+		_state=State.ATTACK
+	else: _state=State.CHASE
+	
 	_exec_easy_state(bp, ep, dist, bot)
 	
 func _exec_easy_state(bp: Vector2, ep: Vector2, dist: float, bot: Dictionary) -> void:
@@ -117,9 +177,8 @@ func _exec_easy_state(bp: Vector2, ep: Vector2, dist: float, bot: Dictionary) ->
 			if bot.on_floor and _jump_cd <= 0:
 				jump = true; _jump_cd = 0.6
 		State.SURVIVE:
-			var sd : int = 1 if bp.x < Globals.VW/2 else -1
-			if sd > 0: right = true
-			else: left = true
+			if bp.x<Globals.VW/2: right=true 
+			else: left=true
 		State.JUMP_TO:
 			if dx > 0: right = true
 			else: left = true
@@ -244,6 +303,7 @@ func _astar_find_path(start: Vector2, target: Vector2, platforms: Array) -> Arra
 
 	return []
 	
+	
 func _can_jump_between(a: Vector2, b: Vector2) -> bool:
 	var dx : float = abs(b.x - a.x)
 	var dy := a.y - b.y
@@ -273,6 +333,92 @@ func _update_hard(delta: float, bot: Dictionary, enemy: Dictionary,
 	if abs(dx) > 10:
 		if dx > 0: right = true
 		else: left = true
+		
+func _update_ai(delta: float, bot: Dictionary, enemy: Dictionary,
+		platforms: Array, mode: int, king_rect: Rect2,
+		lava_y: float, swap_ready_bot: bool) -> void:
+
+	var bp: Vector2 = bot.pos
+	var ep: Vector2 = enemy.pos
+
+	if mode == Globals.Mode.LAVA:
+		_lava_survive(bot, platforms, lava_y)
+		return
+	if mode == Globals.Mode.KING:
+		_king_logic(bot, enemy, king_rect)
+		return
+
+	var bot_near_edge: bool = bp.x < EDGE_DANGER or bp.x > Globals.VW - EDGE_DANGER
+	var enemy_near_edge: bool = ep.x < EDGE_DANGER or ep.x > Globals.VW - EDGE_DANGER
+
+	if enemy_near_edge and swap_ready_bot:
+		swap = true
+
+	_nn_think_t -= delta
+	if _nn_think_t > 0:
+		_apply_nn(_nn_cached, bot, enemy, bot_near_edge)
+		return
+
+	_nn_think_t = NN_THINK
+
+	var bed: float = min(bp.x, Globals.VW - bp.x) / Globals.VW
+	var eed: float = min(ep.x, Globals.VW - ep.x) / Globals.VW
+
+	var inp: Array = [
+		bp.x / Globals.VW, bp.y / Globals.VH,
+		clamp(bot.vel.x / Globals.SPEED, -1.0, 1.0), clamp(bot.vel.y / 400.0, -1.0, 1.0),
+		ep.x / Globals.VW, ep.y / Globals.VH,
+		clamp(enemy.vel.x / Globals.SPEED, -1.0, 1.0), clamp(enemy.vel.y / 400.0, -1.0, 1.0),
+		(ep.x - bp.x) / Globals.VW, (ep.y - bp.y) / Globals.VH,
+		bed, eed
+	]
+
+	_nn_cached = _nn_forward(inp)
+	_apply_nn(_nn_cached, bot, enemy, bot_near_edge)
+	
+func _apply_nn(out: Array, bot: Dictionary, enemy: Dictionary, bot_near_edge: bool) -> void:
+	var bp: Vector2 = bot.pos
+	var ep: Vector2 = enemy.pos
+	
+	if float(out[0]) > 0.5:
+		left = true
+	if float(out[1]) > 0.5:
+		right = true
+	if float(out[2]) > 0.52 and bot.on_floor and _jump_cd <= 0:
+		jump = true
+		_jump_cd = 0.3
+	if float(out[3]) > 0.48:
+		push = true
+	if float(out[4]) > 0.7:
+		swap = true
+	
+	if bot_near_edge:
+		left = false
+		right = false
+		if bp.x < EDGE_DANGER:
+			right = true
+		else:
+			left = true
+		if not bot.on_floor and _jump_cd <= 0:
+			jump = true
+			_jump_cd = 0.4
+	
+	var dist: float = bp.distance_to(ep)
+	var enemy_near_edge2: bool = ep.x < EDGE_DANGER + 10 or ep.x > Globals.VW - EDGE_DANGER - 10
+	
+	if dist < REACT_DIST + 25 and enemy_near_edge2:
+		push = true
+		var dx: float = ep.x - bp.x
+		if abs(dx) > 8:
+			if dx > 0:
+				right = true
+			else:
+				left = true
+	
+	if _stuck_timer > 0.35 and bot.on_floor and _jump_cd <= 0:
+		jump = true
+		_jump_cd = 0.4
+		_stuck_timer = 0.0
 
 func _lava_survive(bot: Dictionary, platforms: Array, lava_y: float) -> void:
 	var bp : Vector2 = bot.pos
