@@ -3,6 +3,30 @@ extends Node
 var time : float = 0.0
 func update(delta: float) -> void: time += delta
 
+var _trails : Dictionary = {}
+const TRAIL_LEN : int = 14
+
+func trail_add(p: Dictionary) -> void:
+	var pid:int=p.id
+	if not _trails.has(pid): _trails[pid]=[]
+	var col:Color=Globals.C_P1 if pid==1 else Globals.C_P2
+	if p.get("has_gloves",false): col=Globals.C_GLOVE
+	elif p.get("has_boots",false): col=Globals.C_BOOTS
+	_trails[pid].push_front({"pos":Vector2(p.pos.x,p.pos.y),"col":col})
+	if _trails[pid].size()>TRAIL_LEN: _trails[pid].resize(TRAIL_LEN)
+
+func _draw_trail(c:Node2D, p:Dictionary) -> void:
+	var pid:int=p.id
+	if not _trails.has(pid): return
+	var trail:Array=_trails[pid]; var n:int=trail.size()
+	for i in n:
+		var frac:float=float(i)/float(max(n-1,1))
+		var a:float=(1.0-frac)*0.5
+		var r:float=Globals.PW*0.65*(1.0-frac*0.75)
+		if r>0.4:
+			var t:Dictionary=trail[i]
+			c.draw_circle(t.pos,r,Color(t.col.r,t.col.g,t.col.b,a))
+
 const BG_NAMES : Array = [
 	"КОСМОС","НЕБО","ВУЛКАН","ПЕЩЕРА","НЕОН",
 	"ЗАКАТ","ОКЕАН","ЛЕС","ШТОРМ","ТУНДРА","ПУСТЫНЯ"
@@ -10,16 +34,16 @@ const BG_NAMES : Array = [
 const BG_ICONS : Array = ["🌌","☁️","🌋","⛏️","💡","🌅","🌊","🌿","⛈️","❄️","🏜️"]
 
 func draw_main_menu(c: Node2D, cursor: int, blink: float, bob: float) -> void:
-	var font : Font  = ThemeDB.fallback_font
-	var VW   : float = Globals.VW
-	var VH   : float = Globals.VH
-	var ty   : float = 48.0 + sin(bob*1.6)*4.0
+	var font: Font = ThemeDB.fallback_font
+	var VW: float = Globals.VW
+	var VH: float = Globals.VH
+	var ty: float = 48.0 + sin(bob*1.6)*4.0
 
-	c.draw_string(font, Vector2(VW/2, ty+2),
+	c.draw_string(font, Vector2(VW/2 - 75, ty+2),
 				  "SWAP & SLAP", HORIZONTAL_ALIGNMENT_CENTER, -1, 26, Color(0,0,0,0.55))
-	c.draw_string(font, Vector2(VW/2, ty),
+	c.draw_string(font, Vector2(VW/2 - 75, ty),
 				  "SWAP & SLAP", HORIZONTAL_ALIGNMENT_CENTER, -1, 26, Globals.C_GOLD)
-	c.draw_string(font, Vector2(VW/2, ty+17),
+	c.draw_string(font, Vector2(VW/2 - 66, ty+17),
 				  "Меняй тела · Толкай врага · Побеждай!",
 				  HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Color(0.62,0.72,0.85))
 	c.draw_line(Vector2(55,ty+27), Vector2(VW-55,ty+27),
@@ -43,21 +67,21 @@ func draw_main_menu(c: Node2D, cursor: int, blink: float, bob: float) -> void:
 						  "►", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Globals.C_GOLD)
 
 	c.draw_line(Vector2(38,VH-18), Vector2(VW-38,VH-18), Color(0.15,0.15,0.28,0.4), 0.5)
-	c.draw_string(font, Vector2(VW/2-95, VH-10),
+	c.draw_string(font, Vector2(VW/2-80, VH-10),
 				  "W/S ↑↓ — выбор    Пробел/Enter — подтвердить",
 				  HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(0.30,0.30,0.40))
 
 
 func draw_mode_select(c: Node2D, cursor: int, blink: float, bob: float,
 					  scores: Array, player_count: int) -> void:
-	var font : Font  = ThemeDB.fallback_font
-	var VW   : float = Globals.VW
-	var VH   : float = Globals.VH
-	var ty   : float = 8.0 + sin(bob*1.5)*2.0
+	var font: Font = ThemeDB.fallback_font
+	var VW: float = Globals.VW
+	var VH: float = Globals.VH
+	var ty: float = 8.0 + sin(bob*1.5)*2.0
 
-	c.draw_string(font, Vector2(VW/2, ty+18+2),
+	c.draw_string(font, Vector2(VW/2 - 70, ty+18+2),
 				  "SWAP & SLAP", HORIZONTAL_ALIGNMENT_CENTER, -1, 20, Color(0,0,0,0.55))
-	c.draw_string(font, Vector2(VW/2, ty+18),
+	c.draw_string(font, Vector2(VW/2 - 70, ty+18),
 				  "SWAP & SLAP", HORIZONTAL_ALIGNMENT_CENTER, -1, 20, Globals.C_GOLD)
 
 	var lc : Color = Globals.C_P1 if player_count==1 else Globals.C_P2
@@ -99,39 +123,39 @@ func draw_mode_select(c: Node2D, cursor: int, blink: float, bob: float,
 					  HORIZONTAL_ALIGNMENT_RIGHT, -1, 8, Color(0.45,0.45,0.55))
 
 	c.draw_line(Vector2(35,VH-20), Vector2(VW-35,VH-20), Color(0.15,0.15,0.28,0.38), 0.5)
-	c.draw_string(font, Vector2(VW/2, VH-10),
+	c.draw_string(font, Vector2(VW/2 - 95, VH-10),
 				  "W/S ↑↓ — выбор   Пробел/Enter — далее   ESC — назад",
 				  HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Color(0.30,0.30,0.40))
 
 
 func draw_map_select(c: Node2D, cursor: int, blink: float, _bob: float) -> void:
-	var font  : Font  = ThemeDB.fallback_font
-	var VW    : float = Globals.VW
-	var VH    : float = Globals.VH
+	var font: Font  = ThemeDB.fallback_font
+	var VW: float = Globals.VW
+	var VH: float = Globals.VH
 
 	c.draw_rect(Rect2(0,0,VW,VH), Color(0,0,0,0.42))
 
-	c.draw_string(font, Vector2(VW/2, 16),
+	c.draw_string(font, Vector2(VW/2 - 55, 16),
 				  "ВЫБОР КАРТЫ", HORIZONTAL_ALIGNMENT_CENTER, -1, 13, Globals.C_GOLD)
 	c.draw_line(Vector2(24,21), Vector2(VW-24,21),
 				Color(Globals.C_GOLD.r,Globals.C_GOLD.g,Globals.C_GOLD.b,0.28), 1.0)
 
 	var map_name : String = "СЛУЧАЙНАЯ 🎲" if cursor==11 else BG_NAMES[cursor]
-	c.draw_string(font, Vector2(VW/2, 33),
+	c.draw_string(font, Vector2(VW/2 - 50, 33),
 				  map_name, HORIZONTAL_ALIGNMENT_CENTER, -1, 11, Globals.C_GOLD)
 
 
-	const COLS  : int   = 4
-	const ROWS  : int   = 3
-	const CW    : float = 60.0
-	const CH    : float = 45.0
-	const GAP   : float = 4.0
-	const PAD_T : float = 40.0
+	const COLS: int = 4
+	const ROWS: int = 3
+	const CW: float = 60.0
+	const CH: float = 45.0
+	const GAP: float = 4.0
+	const PAD_T: float = 70.0
 
-	var grid_w : float = float(COLS)*(CW+GAP) - GAP
-	var grid_h : float = float(ROWS)*(CH+GAP) - GAP
-	var ox     : float = (VW - grid_w) / 2.0
-	var oy     : float = PAD_T
+	var grid_w: float = float(COLS)*(CW+GAP) - GAP
+	var grid_h: float = float(ROWS)*(CH+GAP) - GAP
+	var ox: float = (VW - grid_w) / 2.0
+	var oy: float = PAD_T
 
 	for idx in 12:
 		var col : int   = idx % COLS
@@ -145,7 +169,7 @@ func draw_map_select(c: Node2D, cursor: int, blink: float, _bob: float) -> void:
 				_draw_map_preview(c, font, cx, cy, CW, CH, idx, idx==cursor, blink)
 
 	c.draw_line(Vector2(20,VH-16), Vector2(VW-20,VH-16), Color(0.18,0.18,0.30,0.38), 0.5)
-	c.draw_string(font, Vector2(VW/2, VH-7),
+	c.draw_string(font, Vector2(VW/2 - 115, VH-7),
 				  "←→↑↓ — выбор    Пробел/Enter — подтвердить    ESC — назад",
 				  HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Color(0.30,0.30,0.42))
 
@@ -242,8 +266,7 @@ func _draw_map_preview(c: Node2D, font: Font, x: float, y: float,
 			c.draw_circle(Vector2(px+pw*0.75, py_+ph*0.2), 6, Color(1,0.88,0.2))
 
 	var name_col : Color = Globals.C_GOLD if selected else Color(0.65,0.65,0.72)
-	c.draw_string(font, Vector2(x+w/2-15, y+h-5), BG_NAMES[bg_id],
-				  HORIZONTAL_ALIGNMENT_LEFT, -1, 6, name_col)
+	c.draw_string(font, Vector2(x, y + h - 4), BG_NAMES[bg_id], HORIZONTAL_ALIGNMENT_CENTER, w, 6, name_col)
 
 func _draw_rand_cell(c: Node2D, font: Font, x: float, y: float,
 					 w: float, h: float, selected: bool, blink: float) -> void:
@@ -252,9 +275,9 @@ func _draw_rand_cell(c: Node2D, font: Font, x: float, y: float,
 	c.draw_rect(Rect2(x,y,w,h), Color(0.08,0.08,0.16))
 	c.draw_rect(Rect2(x,y,w,h), Color(col.r,col.g,col.b,0.12+pulse))
 	c.draw_rect(Rect2(x,y,w,h), col, false, 1.5 if selected else 0.8)
-	c.draw_string(font, Vector2(x+w/2, y+20), "🎲",
+	c.draw_string(font, Vector2((x+w/2) - 12, y+20), "🎲",
 				  HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Color.WHITE)
-	c.draw_string(font, Vector2(x+w/2, y+h-6), "РАНДОМ",
+	c.draw_string(font, Vector2((x+w/2) - 15, y+h-6), "РАНДОМ",
 				  HORIZONTAL_ALIGNMENT_CENTER, -1, 6, col)
 
 
@@ -414,9 +437,9 @@ func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
 			  mode: int, chaos_timer: float, chaos_interval: float,
 			  menu_blink: float, is_bot: bool, game_time: float,
 			  players: Array) -> void:
-	var font : Font  = ThemeDB.fallback_font
-	var VW   : float = Globals.VW
-	var VH   : float = Globals.VH
+	var font: Font  = ThemeDB.fallback_font
+	var VW: float = Globals.VW
+	var VH: float = Globals.VH
 
 	c.draw_rect(Rect2(0,0,VW,24), Color(0,0,0,0.80))
 	c.draw_line(Vector2(0,24), Vector2(VW,24), Color(1,1,1,0.08), 1.0)
@@ -546,7 +569,7 @@ func draw_result(c: Node2D, winner: int, scores: Array,
 	c.draw_string(font, Vector2(bx+16, box_y+84),
 				  "Счёт:  P1  %d — %d  P2" % [scores[0],scores[1]],
 				  HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.72,0.72,0.72))
-	c.draw_string(font, Vector2(VW/2-80, VH-18),
+	c.draw_string(font, Vector2(VW/2-100, VH-18),
 				  "Нажми Пробел или Enter — в выбор режима",
 				  HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
 				  Color(0.7,0.7,0.82, abs(sin(celebrate*3.0))))
@@ -562,37 +585,89 @@ func draw_diff_select(c: Node2D, cursor: int, blink: float) -> void:
 	var bx: float = 60.0
 	var by_: float = 70.0
 	var bw: float = VW-120.0
-	var bh: float = 130.0
+	var bh: float = 155.0
 	c.draw_rect(Rect2(bx, by_, bw, bh), Color(0.06,0.07,0.14,0.95))
 	c.draw_rect(Rect2(bx, by_, bw, bh), Globals.C_GOLD, false, 1.5)
 
-	c.draw_string(font, Vector2(VW/2, by_+16),
+	c.draw_string(font, Vector2(VW/2 - 75, by_+16),
 				  "ВЫБОР СЛОЖНОСТИ БОТА", HORIZONTAL_ALIGNMENT_CENTER, -1, 11, Globals.C_GOLD)
 	c.draw_line(Vector2(bx+8,by_+22), Vector2(bx+bw-8,by_+22),
 				Color(Globals.C_GOLD.r,Globals.C_GOLD.g,Globals.C_GOLD.b,0.3), 0.8)
 
 	var labels : Array = ["🟢  ЛЕГКО   — бот медленный, делает ошибки",
 						  "🟡  СРЕДНИЙ — A* поиск, предсказывает позицию",
-						  "🔴  СЛОЖНО  — MCTS, просчитывает несколько ходов"]
+						  "🔴  СЛОЖНО  — MCTS, просчитывает несколько ходов",
+						  "🟣  ИИ — нейросеть MLP 12→16→8→5"]
 
-	for i in 3:
-		var sel: bool  = i == cursor
-		var iy: float = by_ + 34.0 + float(i)*28.0
+	for i in 4:
+		var sel: bool = i == cursor
+		var iy: float = by_ + 32.0 + float(i)*30.0
 		var dcol: Color = Globals.DIFF_COLORS[i]
 		if sel:
 			c.draw_rect(Rect2(bx+6,iy-3,bw-12,22), Color(dcol.r,dcol.g,dcol.b,0.12+abs(sin(blink*4))*0.08))
-			c.draw_string(font, Vector2(bx+20+sin(blink*5)*2,iy+12),
+			c.draw_string(font, Vector2(bx+18+sin(blink*5)*2,iy+14),
 						  "►", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Globals.C_GOLD)
-		c.draw_string(font, Vector2(bx+32,iy+12),
+		c.draw_string(font, Vector2(bx+32,iy+14),
 					  labels[i] as String, HORIZONTAL_ALIGNMENT_LEFT, -1, 9,
 					  Color.WHITE if sel else Color(0.55,0.55,0.65))
 
-	c.draw_string(font, Vector2(VW/2, by_+bh+8),
+	c.draw_string(font, Vector2(VW/2 - 115, by_+bh+8),
 				  "W/S ↑↓ — выбор    Enter/Пробел — подтвердить    ESC — назад",
-				  HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Color(0.30,0.30,0.40))
+				  HORIZONTAL_ALIGNMENT_CENTER, -1,7, Color(0.30,0.30,0.40))
 
 func draw_visualizer(c: Node2D) -> void:
 	DjMode.draw_visualizer(c)
 
 func draw_debug_overlay(c: Node2D, players: Array, platforms: Array) -> void:
 	DjMode.draw_debug(c, players, platforms)
+
+
+func draw_pause_menu(c:Node2D, cursor:int, blink:float) -> void:
+	var font:Font=ThemeDB.fallback_font
+	var VW:float=Globals.VW; var VH:float=Globals.VH
+	c.draw_rect(Rect2(0,0,VW,VH),Color(0,0,0,0.65))
+	c.draw_string(font,Vector2(VW/2,VH/2-50),"ПАУЗА",HORIZONTAL_ALIGNMENT_CENTER,-1,20,Globals.C_GOLD)
+	c.draw_line(Vector2(60,VH/2-36),Vector2(VW-60,VH/2-36),Color(Globals.C_GOLD.r,Globals.C_GOLD.g,Globals.C_GOLD.b,0.4),1.0)
+	var labels2:Array=["▶  ПРОДОЛЖИТЬ","   ВЫЙТИ В МЕНЮ","   ВЫЙТИ ИЗ ИГРЫ"]
+	var cols2:Array=[Color(0.3,0.9,0.3),Color(0.9,0.85,0.2),Color(0.9,0.3,0.3)]
+	var bw2:float=170.0; var bh2:float=26.0; var bx2:float=VW/2-bw2/2
+	for i in 3:
+		var sel:bool=i==cursor; var by2:float=VH/2-22+float(i)*36
+		var col2:Color=cols2[i]
+		c.draw_rect(Rect2(bx2,by2,bw2,bh2),Color(0.08,0.08,0.16,0.95))
+		c.draw_rect(Rect2(bx2,by2,bw2,bh2),Color(col2.r,col2.g,col2.b,0.6 if sel else 0.2),false,1.5)
+		if sel: c.draw_rect(Rect2(bx2,by2,bw2,bh2),Color(col2.r,col2.g,col2.b,0.1+abs(sin(blink*4))*0.08))
+		c.draw_string(font,Vector2(bx2+10,by2+17),labels2[i],HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color.WHITE if sel else Color(0.6,0.6,0.7))
+	c.draw_string(font,Vector2(VW/2,VH/2+92),"↑↓ выбор    Enter подтвердить    ESC продолжить",HORIZONTAL_ALIGNMENT_CENTER,-1,7,Color(0.3,0.3,0.4))
+
+
+func draw_round_end(c:Node2D, winner:int, scores:Array, timer:float, is_bot:bool) -> void:
+	var font:Font=ThemeDB.fallback_font; var VW:float=Globals.VW; var VH:float=Globals.VH
+	var wc:Color=Globals.C_P1 if winner==1 else Globals.C_P2
+	var who:String="P%d"%winner if (winner==1 or not is_bot) else "БОТ"
+	c.draw_rect(Rect2(0,0,VW,VH),Color(0,0,0,0.52))
+	c.draw_rect(Rect2(48,VH/2-30,VW-96,60),Color(0,0,0,0.88))
+	c.draw_rect(Rect2(48,VH/2-30,VW-96,60),wc,false,2.0)
+	c.draw_string(font,Vector2(VW/2,VH/2-6),"★  %s ВЫИГРАЛ РАУНД  ★"%who,HORIZONTAL_ALIGNMENT_CENTER,-1,13,wc)
+	c.draw_string(font,Vector2(VW/2,VH/2+14),"Счёт: P1 %d — %d P2"%[scores[0],scores[1]],HORIZONTAL_ALIGNMENT_CENTER,-1,9,Color(0.8,0.8,0.8))
+	var bw3:float=clamp(1.0-timer/2.5,0.0,1.0)*(VW-96)
+	c.draw_rect(Rect2(48,VH/2+26,VW-96,3),Color(0.15,0.15,0.25))
+	c.draw_rect(Rect2(48,VH/2+26,bw3,3),wc)
+
+func draw_match_end(c:Node2D, winner:int, scores:Array, celebrate:float, is_bot:bool, stats:Dictionary) -> void:
+	var font:Font=ThemeDB.fallback_font; var VW:float=Globals.VW; var VH:float=Globals.VH
+	var wc:Color=Globals.C_P1 if winner==1 else Globals.C_P2
+	var who:String="ИГРОК %d"%winner if (winner==1 or not is_bot) else "БОТ"
+	c.draw_rect(Rect2(28,14,VW-56,VH-28),Color(0,0,0,0.92))
+	c.draw_rect(Rect2(28,14,VW-56,VH-28),wc,false,2.0)
+	c.draw_string(font,Vector2(VW/2,44),"★  %s ВЫИГРАЛ МАТЧ!  ★"%who,HORIZONTAL_ALIGNMENT_CENTER,-1,17,wc)
+	c.draw_string(font,Vector2(VW/2,62),"Итог: P1 %d — %d P2"%[scores[0],scores[1]],HORIZONTAL_ALIGNMENT_CENTER,-1,10,Color(0.75,0.75,0.75))
+	c.draw_line(Vector2(46,70),Vector2(VW-46,70),Color(wc.r,wc.g,wc.b,0.35),1.0)
+	c.draw_string(font,Vector2(VW/2,84),"— СТАТИСТИКА —",HORIZONTAL_ALIGNMENT_CENTER,-1,9,Color(0.5,0.6,0.7))
+	var rows4:Array=[["👊  Ударов",stats.hits],["💀  Смертей",stats.deaths],["🎁  Пикапов",stats.pickups]]
+	for i in rows4.size():
+		var ry:float=100.0+float(i)*22.0; var label4:String=rows4[i][0]; var vals4:Array=rows4[i][1]
+		c.draw_string(font,Vector2(48,ry),label4,HORIZONTAL_ALIGNMENT_LEFT,-1,9,Color(0.65,0.65,0.75))
+		c.draw_string(font,Vector2(VW/2+8,ry),"P1: %d"%vals4[0],HORIZONTAL_ALIGNMENT_LEFT,-1,9,Globals.C_P1)
+		c.draw_string(font,Vector2(VW/2+70,ry),"P2: %d"%vals4[1],HORIZONTAL_ALIGNMENT_LEFT,-1,9,Globals.C_P2)
+	c.draw_string(font,Vector2(VW/2,VH-22),"Пробел / Enter — в главное меню",HORIZONTAL_ALIGNMENT_CENTER,-1,8,Color(0.7,0.7,0.82,abs(sin(celebrate*3.0))))
