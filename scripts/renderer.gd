@@ -59,7 +59,7 @@ func draw_main_menu(c: Node2D, cursor: int, blink: float, bob: float) -> void:
 		c.draw_rect(Rect2(bx,by_,bw,bh), Color(0.18,0.28,0.48,0.92) if sel else Color(0.07,0.07,0.14,0.88))
 		var bc : Color = btns[i][1] as Color
 		c.draw_rect(Rect2(bx,by_,bw,bh), Color(bc.r,bc.g,bc.b, 0.72+abs(sin(blink*4))*0.28 if sel else 0.30), false, 1.5)
-		c.draw_string(font, Vector2(VW/2, by_+19),
+		c.draw_string(font, Vector2(VW/2 - 40, by_+19),
 					  btns[i][0] as String, HORIZONTAL_ALIGNMENT_CENTER, -1, 11,
 					  Color.WHITE if sel else Color(0.55,0.55,0.65))
 		if sel:
