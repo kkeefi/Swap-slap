@@ -469,7 +469,7 @@ func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
 				lbl = "P1 обмен" if i==0 else ("БОТ обмен" if is_bot else "P2 обмен")
 				c.draw_string(font, Vector2(bx+bw/2, by_+16), lbl,
 							  HORIZONTAL_ALIGNMENT_CENTER, -1, 6, Color(0.45,0.50,0.60))
-		c.draw_string(font, Vector2(VW/2, 15), "⇄",
+		c.draw_string(font, Vector2(VW/2, 10), "⇄",
 					  HORIZONTAL_ALIGNMENT_CENTER, -1, 11, Color(0.45,0.45,0.55))
 	else:
 		c.draw_string(font, Vector2(VW/2, 15),
@@ -492,7 +492,7 @@ func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
 	if game_time > 0:
 		var mi  : int = int(game_time) / 60
 		var sec : int = int(game_time) % 60
-		c.draw_string(font, Vector2(VW/2, 26),
+		c.draw_string(font, Vector2(VW/2 - 2, 20),
 					  "%d:%02d" % [mi, sec],
 					  HORIZONTAL_ALIGNMENT_CENTER, -1, 8, Color(0.7,0.7,0.82,0.8))
 
@@ -626,9 +626,9 @@ func draw_pause_menu(c:Node2D, cursor:int, blink:float) -> void:
 	var font:Font=ThemeDB.fallback_font
 	var VW:float=Globals.VW; var VH:float=Globals.VH
 	c.draw_rect(Rect2(0,0,VW,VH),Color(0,0,0,0.65))
-	c.draw_string(font,Vector2(VW/2,VH/2-50),"ПАУЗА",HORIZONTAL_ALIGNMENT_CENTER,-1,20,Globals.C_GOLD)
+	c.draw_string(font,Vector2(VW/2 - 30,VH/2-50),"ПАУЗА",HORIZONTAL_ALIGNMENT_CENTER,-1,20,Globals.C_GOLD)
 	c.draw_line(Vector2(60,VH/2-36),Vector2(VW-60,VH/2-36),Color(Globals.C_GOLD.r,Globals.C_GOLD.g,Globals.C_GOLD.b,0.4),1.0)
-	var labels2:Array=["▶  ПРОДОЛЖИТЬ","   ВЫЙТИ В МЕНЮ","   ВЫЙТИ ИЗ ИГРЫ"]
+	var labels2:Array=["▶             ПРОДОЛЖИТЬ","             ВЫЙТИ В МЕНЮ","             ВЫЙТИ ИЗ ИГРЫ"]
 	var cols2:Array=[Color(0.3,0.9,0.3),Color(0.9,0.85,0.2),Color(0.9,0.3,0.3)]
 	var bw2:float=170.0; var bh2:float=26.0; var bx2:float=VW/2-bw2/2
 	for i in 3:
@@ -638,7 +638,7 @@ func draw_pause_menu(c:Node2D, cursor:int, blink:float) -> void:
 		c.draw_rect(Rect2(bx2,by2,bw2,bh2),Color(col2.r,col2.g,col2.b,0.6 if sel else 0.2),false,1.5)
 		if sel: c.draw_rect(Rect2(bx2,by2,bw2,bh2),Color(col2.r,col2.g,col2.b,0.1+abs(sin(blink*4))*0.08))
 		c.draw_string(font,Vector2(bx2+10,by2+17),labels2[i],HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color.WHITE if sel else Color(0.6,0.6,0.7))
-	c.draw_string(font,Vector2(VW/2,VH/2+92),"↑↓ выбор    Enter подтвердить    ESC продолжить",HORIZONTAL_ALIGNMENT_CENTER,-1,7,Color(0.3,0.3,0.4))
+	c.draw_string(font,Vector2(VW/2 - 85,VH/2+92),"↑↓ выбор    Enter подтвердить    ESC продолжить",HORIZONTAL_ALIGNMENT_CENTER,-1,7,Color(0.3,0.3,0.4))
 
 
 func draw_round_end(c:Node2D, winner:int, scores:Array, timer:float, is_bot:bool) -> void:
