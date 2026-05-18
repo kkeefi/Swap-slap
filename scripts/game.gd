@@ -1,14 +1,16 @@
 extends Node2D
 
-enum Scene { MAIN_MENU, MODE_SELECT, MAP_SELECT, GAME, RESULT }
+enum Scene { MAIN_MENU, MODE_SELECT, MAP_SELECT, GAME, ROUND_END, MATCH_END }
 var scene: int = Scene.MAIN_MENU
 var main_menu_cursor: int = 0
 var mode_cursor: int = 0
 var map_cursor: int = 11
 var game_active: bool  = false
 
+var paused : bool = false
+var pause_cursor : int  = 0
+
 var players: Array = []
-var controllers: Array = [1, 2]
 
 var swap_charge: Array = [0.0, 0.0]
 var swap_ready: Array = [false, false]
@@ -54,9 +56,11 @@ var announce_text: String = ""
 var announce_timer: float  = 0.0
 var announce_color: Color  = Globals.C_GOLD
 
-var result_celebrate: float = 0.0
-var particles: Array = []
-var danger_flash: float = 0.0
+var particles : Array = []
+var danger_flash : float = 0.0
+
+var round_end_timer : float = 0.0
+var match_celebrate : float = 0.0
 
 const WIN_SCORE: int = 3
 
@@ -65,36 +69,39 @@ var boids : Array = []
 var diff_cursor: int  = 1
 var in_diff_select: bool = false
 
-
 func _process(delta: float) -> void:
 	menu_bob += delta
 	menu_blink += delta
 	Backgrounds.update(delta)
 	Renderer.update(delta)
 	DjMode.update(delta)
-
-	for i in range(particles.size()-1, -1, -1):
-		var p : Dictionary = particles[i]
-		p.life -= delta
-		p.pos  += p.vel * delta
-		p.vel.y += 200.0 * delta
-		if p.life <= 0:
-			particles.remove_at(i)
-
-	if announce_timer > 0: announce_timer -= delta
-	if swap_flash_alpha > 0: swap_flash_alpha = max(0.0, swap_flash_alpha - delta * 3.0)
-	if danger_flash > 0: danger_flash = max(0.0, danger_flash - delta * 4.0)
+	
+	if not paused:
+		for i in range(particles.size()-1, -1, -1):
+			var p : Dictionary = particles[i]
+			p.life -= delta
+			p.pos  += p.vel * delta
+			p.vel.y += 200.0 * delta
+			if p.life <= 0:
+				particles.remove_at(i)
+		if announce_timer > 0: announce_timer -= delta
+		if swap_flash_alpha > 0: swap_flash_alpha = max(0.0, swap_flash_alpha - delta * 3.0)
+		if danger_flash > 0: danger_flash = max(0.0, danger_flash - delta * 4.0)
+		_update_boids(delta)
 
 	match scene:
 		Scene.GAME:
-			if game_active:
+			if game_active and not paused:
 				game_time += delta
 				_update_game(delta)
-		Scene.RESULT:
-			result_celebrate += delta
-			if fmod(result_celebrate, 0.055) < 0.02:
+		Scene.ROUND_END:
+			if not paused:
+				round_end_timer -= delta
+				if round_end_timer <= 0.0: _start_game()
+		Scene.MATCH_END:
+			match_celebrate += delta
+			if fmod(match_celebrate,0.055) < 0.02: 
 				_spawn_confetti()
-	_update_boids(delta)
 	queue_redraw()
 
 func _ready() -> void:
@@ -108,9 +115,35 @@ func _ready() -> void:
 func _input(ev: InputEvent) -> void:
 	if not (ev is InputEventKey and ev.pressed and not ev.echo): return
 	var kc : int = ev.keycode
+	
+	if scene==Scene.GAME and kc==KEY_ESCAPE and not paused:
+		paused=true 
+		pause_cursor=0 
+		queue_redraw() 
+		return
+
+	if paused and scene==Scene.GAME:
+		match kc:
+			KEY_UP,KEY_W,4194320:
+				pause_cursor=(pause_cursor-1+4)%4 
+				Sound.play_menu_move()
+			KEY_DOWN,KEY_S,4194322:
+				pause_cursor=(pause_cursor+1)%4
+				Sound.play_menu_move()
+			KEY_ESCAPE:
+				paused=false
+			KEY_SPACE,KEY_ENTER,4194309:
+				Sound.play_menu_confirm()
+				match pause_cursor:
+					0: paused=false
+					1: paused=false; game_active=false; Sound.stop_music(); Globals.reset_scores(); scene=Scene.MAIN_MENU
+					2: get_tree().quit()
+		queue_redraw() 
+		return
+	
 	match scene:
 		Scene.MAIN_MENU:
-			if   kc in [KEY_UP, KEY_W, 4194320]:
+			if kc in [KEY_UP, KEY_W, 4194320]:
 				main_menu_cursor = (main_menu_cursor - 1 + 2) % 2
 				Sound.play_menu_move()
 			elif kc in [KEY_DOWN, KEY_S, 4194322]:
@@ -124,7 +157,7 @@ func _input(ev: InputEvent) -> void:
 		Scene.MODE_SELECT:
 			if in_diff_select:
 				if   kc in [KEY_UP, KEY_W, 4194320]:
-					diff_cursor = (diff_cursor-1+3)%3
+					diff_cursor = (diff_cursor-1+4)%4
 					Sound.play_menu_move()
 				elif kc in [KEY_DOWN, KEY_S, 4194322]:
 					diff_cursor = (diff_cursor+1)%3
@@ -184,19 +217,14 @@ func _input(ev: InputEvent) -> void:
 			elif kc == KEY_ESCAPE:
 				Sound.play_menu_move()
 				scene = Scene.MODE_SELECT
-		Scene.RESULT:
-			if kc in [KEY_SPACE, KEY_ENTER, KEY_ESCAPE, 4194309]:
-				Sound.stop_music()
-				Globals.reset_scores()
-				scene = Scene.MODE_SELECT
-
-func _unhandled_input(ev: InputEvent) -> void:
-	if ev is InputEventKey and ev.pressed and ev.keycode == KEY_ESCAPE:
-		if scene == Scene.GAME:
-			game_active = false
-			Sound.stop_music()
-			scene = Scene.MODE_SELECT
-
+		Scene.ROUND_END:
+			if kc in [KEY_SPACE,KEY_ENTER,4194309]: 
+				round_end_timer=0.0
+		Scene.MATCH_END:
+			if kc in [KEY_SPACE,KEY_ENTER,KEY_ESCAPE,4194309]:
+				Sound.stop_music() 
+				Globals.reset_scores() 
+				scene=Scene.MAIN_MENU
 
 func _draw() -> void:
 	match scene:
@@ -214,20 +242,22 @@ func _draw() -> void:
 			Renderer.draw_map_select(self, map_cursor, menu_blink, menu_bob)
 		Scene.GAME:
 			_draw_game()
-		Scene.RESULT:
-			Backgrounds.draw(self, 0)
+			if paused: 
+				Renderer.draw_pause_menu(self, pause_cursor, menu_blink)
+		Scene.ROUND_END:
+			_draw_game()
+			Renderer.draw_round_end(self, Globals.last_winner, Globals.scores, round_end_timer, Globals.player_count==1)
+		Scene.MATCH_END:
+			Backgrounds.draw(self,0)
 			for p in particles:
-				draw_rect(
-					Rect2(p.pos.x - p.size, p.pos.y - p.size, p.size * 2.0, p.size * 2.0),
-					Color(p.color.r, p.color.g, p.color.b, clamp(p.life * 2.0, 0.0, 1.0)))
-			Renderer.draw_result(self, Globals.last_winner, Globals.scores,
-								 result_celebrate, Globals.player_count == 1)
+				draw_rect(Rect2(p.pos.x-p.size, p.pos.y-p.size, p.size*2.0, p.size*2.0),
+						  Color(p.color.r, p.color.g, p.color.b, clamp(p.life*2.0,0.0,1.0)))
+			Renderer.draw_match_end(self, Globals.last_winner, Globals.scores, match_celebrate, Globals.player_count==1, Globals.match_stats)
 
 
 func _in_rect(pos: Vector2, r: Rect2) -> bool:
 	return pos.x >= r.position.x and pos.x <= r.position.x + r.size.x and \
 		   pos.y >= r.position.y and pos.y <= r.position.y + r.size.y
-
 
 func _draw_game() -> void:
 	Backgrounds.draw(self, map_bg)
@@ -257,40 +287,76 @@ func _draw_game() -> void:
 		Renderer.draw_platform(self, plat, map_bg, menu_bob)
 
 	if gloves_alive: Renderer.draw_gloves_pickup(self, gloves_pos, gloves_bob)
-	if boots_alive:  Renderer.draw_boots_pickup(self, boots_pos,  boots_bob)
+	if boots_alive: Renderer.draw_boots_pickup(self, boots_pos, boots_bob)
 
 	for i in range(players.size()):
 		if not players[i].dead:
 			Renderer.draw_player(self, players[i], map_bg)
-
-
-func _start_match() -> void:
-	var map_data : Dictionary = Mapgen.generate(Globals.selected_mode)
+			
+	_draw_boids(self)
 	
-	map_bg = map_data["bg"]
+	for p in particles:
+		draw_circle(p.pos, p.size, Color(p.color.r, p.color.g, p.color.b, clamp(p.life*2.5,0.0,1.0)))
+		
+	Renderer.draw_hud(self, Globals.scores, swap_charge, swap_ready,
+					  Globals.selected_mode, chaos_timer, chaos_interval,
+					  menu_blink, Globals.player_count==1, game_time, players)
+					
+	if announce_timer>0.0 and announce_text != "":
+		Renderer.draw_announcement(self, announce_text, announce_timer, announce_color)
+	Renderer.draw_visualizer(self)
+	if Globals.debug_mode: 
+		Renderer.draw_debug_overlay(self, players, platforms)
+		
+func _start_game() -> void:
+	game_active = true
+	game_time = 0.0
+	particles.clear()
 	platforms.clear()
-	
-	var raw_plats : Array = map_data.get("plats", map_data.get("crumble_tiles", []))
-	
-	for p in raw_plats:
-		var cx: float = p[0]
-		var cy: float = p[1]
-		var w: float = p[2]
-		var h: float = p[3]
-		
-		var rect := Rect2(cx - w/2.0, cy - h/2.0, w, h)
-		
-		platforms.append({
-			"rect": rect,
-			"alive": true,
-			"shake": 0.0,
-			"marked": false
-		})
-	
-	if Globals.selected_mode == 2:
-		lava_y = map_data.get("ls", 250.0)
-		lava_speed = map_data.get("lspd", 5.0)
-		
+	gloves_alive = false
+	gloves_timer = randf_range(4.0, 10.0)
+	boots_alive = false
+	boots_timer = randf_range(8.0, 16.0)
+	king_time = [0.0, 0.0]
+	crumble_accum = 0.0
+	swap_flash_alpha = 0.0
+	chaos_timer = 0.0
+	chaos_interval = randf_range(4.0, 6.0)
+	announce_text = ""
+	announce_timer = 0.0
+	swap_charge = [0.0, 0.0]
+	swap_ready = [false, false]
+	danger_flash = 0.0
+	Bot.reset()
+
+	var map: Dictionary = Mapgen.generate(Globals.selected_mode)
+
+	if Globals.forced_bg >= 0:
+		map_bg = Globals.forced_bg
+		map["bg"] = map_bg
+	else:
+		map_bg = map.get("bg", randi() % 11)
+
+	_build_platforms(map)
+
+	players = [
+		_make_player(1, Vector2(float(map["p1"][0]), float(map["p1"][1]))),
+		_make_player(2, Vector2(float(map["p2"][0]), float(map["p2"][1])))
+	]
+
+	match Globals.selected_mode:
+		Globals.Mode.LAVA:
+			lava_y = float(map.get("ls", 252.0))
+			lava_speed = float(map.get("lspd", 4.0))
+			lava_wave = 0.0
+		Globals.Mode.KING:
+			var z: Array = map["zone"]
+			king_rect = Rect2(float(z[0]), float(z[1]), float(z[2]), float(z[3]))
+			king_moves = map.get("zone_moves", false)
+			king_move_dir = 1
+		Globals.Mode.CRUMBLING:
+			crumble_interval = 1.8
+
 	scene = Scene.GAME
 
 func _build_platforms(map: Dictionary) -> void:
@@ -327,69 +393,14 @@ func _make_player(pid: int, sp: Vector2) -> Dictionary:
 		"walk_phase": 0.0
 	}
 
-func _start_game() -> void:
-	game_active = true
-	game_time = 0.0
-	particles.clear()
-	platforms.clear()
-	gloves_alive = false
-	gloves_timer = randf_range(4.0, 10.0)
-	boots_alive = false
-	boots_timer = randf_range(8.0, 16.0)
-	king_time = [0.0, 0.0]
-	crumble_accum = 0.0
-	swap_flash_alpha = 0.0
-	chaos_timer = 0.0
-	chaos_interval = randf_range(4.0, 6.0)
-	announce_text = ""
-	announce_timer = 0.0
-	swap_charge = [0.0, 0.0]
-	swap_ready = [false, false]
-	controllers = [1, 2]
-	danger_flash = 0.0
-	Bot.reset()
-
-	var map : Dictionary = Mapgen.generate(Globals.selected_mode)
-	if Globals.forced_bg >= 0:
-		map_bg = Globals.forced_bg
-		map["bg"] = map_bg
-	else:
-		map_bg = map.get("bg", randi()%11)
-	_build_platforms(map)
-
-	players = [
-		_make_player(1, Vector2(float(map["p1"][0]), float(map["p1"][1]))),
-		_make_player(2, Vector2(float(map["p2"][0]), float(map["p2"][1])))
-	]
-
-	match Globals.selected_mode:
-		Globals.Mode.LAVA:
-			lava_y = float(map.get("ls",   252.0))
-			lava_speed = float(map.get("lspd",   4.0))
-			lava_wave = 0.0
-		Globals.Mode.KING:
-			var z : Array = map["zone"]
-			king_rect  = Rect2(float(z[0]), float(z[1]), float(z[2]), float(z[3]))
-			king_moves = map.get("zone_moves", false)
-			king_move_dir = 1
-		Globals.Mode.CRUMBLING:
-			crumble_interval = 1.8
-
-	scene = Scene.GAME
-	Sound.start_music(Globals.selected_mode)
-
-
 func _update_game(delta: float) -> void:
 	_update_swap(delta)
-	_update_bot(delta)
+	if Globals.player_count==1:
+		Bot.update(delta,players[1],players[0],platforms,
+				   Globals.selected_mode,king_rect,lava_y,swap_ready[1])
 	_update_players(delta)
 	_update_mode(delta)
 	_update_pickups(delta)
-
-func _update_bot(delta: float) -> void:
-	if Globals.player_count != 1: return
-	Bot.update(delta, players[1], players[0], platforms,
-			   Globals.selected_mode, king_rect, lava_y, swap_ready[1])
 
 func _update_swap(delta: float) -> void:
 	if Globals.selected_mode == Globals.Mode.CHAOS:
@@ -427,9 +438,6 @@ func _do_swap() -> void:
 	var tmp_pos : Vector2 = players[0].pos
 	players[0].pos = players[1].pos
 	players[1].pos = tmp_pos
-	var tc : int = controllers[0]
-	controllers[0] = controllers[1]
-	controllers[1] = tc
 	players[0].vel = Vector2.ZERO
 	players[1].vel = Vector2.ZERO
 	_spawn_swap_fx(players[0].pos)
@@ -472,6 +480,7 @@ func _update_pickups(delta: float) -> void:
 				_announce("🥊 P%d — ПЕРЧАТКИ! Удар x2!" % p.id, 1.8)
 				announce_color = Globals.C_GLOVE
 				_spawn_pickup_fx(gloves_pos, Globals.C_GLOVE)
+				Globals.match_stats.pickups[p.id-1]+=1
 
 	if not boots_alive:
 		boots_timer += delta
@@ -489,6 +498,7 @@ func _update_pickups(delta: float) -> void:
 				_announce("🥾 P%d — БОТИНКИ! Супер-прыжок!" % p.id, 1.8)
 				announce_color = Globals.C_BOOTS
 				_spawn_pickup_fx(boots_pos, Globals.C_BOOTS)
+				Globals.match_stats.pickups[p.id-1]+=1
 
 func _spawn_confetti() -> void:
 	var cols : Array = [Globals.C_P1, Globals.C_P2, Globals.C_GLOVE, Globals.C_BOOTS, Color(1.0,0.38,0.82)]
@@ -520,13 +530,12 @@ func _update_player(p: Dictionary, delta: float, idx: int) -> void:
 	if p.punch_anim > 0: p.punch_anim -= delta
 	p.face_blink += delta
 
-	var ctrl : int = controllers[idx]
-	var dir  : float = _get_h(ctrl, idx)
+	var pid : int=p.id
+	var dir : float = _get_h(pid, idx)
 	if dir != 0: p.facing = int(sign(dir))
 
 	if p.inv_time > 0:
-		var friction : float = 35.0 if p.on_floor else 2.5
-		p.vel.x = lerp(p.vel.x, 0.0, delta * friction)
+		p.vel.x = lerp(p.vel.x, 0.0, delta*2.5)
 	else:
 		p.vel.x = dir * Globals.SPEED
 
@@ -534,8 +543,9 @@ func _update_player(p: Dictionary, delta: float, idx: int) -> void:
 		p.walk_phase += delta * 8.0
 	else:
 		p.walk_phase = lerp(p.walk_phase, 0.0, delta * 10.0)
+	Renderer.trail_add(p)
 
-	if _get_jump(ctrl, idx) and p.on_floor:
+	if _get_jump(pid, idx) and p.on_floor:
 		var jf : float = Globals.JUMP_FORCE * (Globals.JUMP_BOOTS_MULT if p.has_boots else 1.0)
 		p.vel.y = jf
 		p.scale_x = 0.65
@@ -549,7 +559,7 @@ func _update_player(p: Dictionary, delta: float, idx: int) -> void:
 		else:
 			Sound.play_jump()
 
-	if _get_push(ctrl, idx) and p.push_cd <= 0:
+	if _get_push(pid, idx) and p.push_cd <= 0:
 		_do_push(idx)
 		p.push_cd = Globals.PUSH_CD
 		p.punch_anim = 0.25
@@ -617,7 +627,7 @@ func _pickup_pos() -> Vector2:
 	if alive.is_empty():
 		return Vector2(randf_range(100.0, 380.0), 185.0)
 	var pl : Dictionary = alive[randi() % alive.size()]
-	var r  : Rect2 = pl.rect
+	var r : Rect2 = pl.rect
 	return Vector2(
 		r.get_center().x + randf_range(-r.size.x * 0.2, r.size.x * 0.2),
 		r.position.y - 12.0)
@@ -695,8 +705,6 @@ func _update_boids(delta: float) -> void:
 		b.vel = bvel
 		b.pos += bvel * delta
 
-
-
 func _get_h(ctrl: int, idx: int) -> float:
 	if Globals.player_count == 1 and idx == 1: return Bot.get_h()
 	if Input.is_action_pressed("p%d_left"  % ctrl): return -1.0
@@ -733,16 +741,15 @@ func _spawn_punch_fx(pos: Vector2, dir: int) -> void:
 
 
 func _do_push(aidx: int) -> void:
-	var att  : Dictionary = players[aidx]
+	var att : Dictionary = players[aidx]
 	var def_ : Dictionary = players[1 - aidx]
 	if def_.dead or def_.inv_time > 0: return
 	
 	var dist_vec : Vector2 = def_.pos - att.pos
-	var dist_x   : float = abs(dist_vec.x)
-	var dist_y   : float = abs(dist_vec.y)
+	var dist_x : float = abs(dist_vec.x)
+	var dist_y : float = abs(dist_vec.y)
 	
 	if dist_x >= 65 or dist_y >= 50: return
-	
 	
 	var is_enemy_in_front : bool = false
 	if att.facing == 1:
@@ -776,13 +783,16 @@ func _do_push(aidx: int) -> void:
 	def_.scale_x = 1.65
 	def_.scale_y = 0.48
 	_spawn_punch_fx(att.pos + Vector2(float(att.facing) * 12.0, 0.0), att.facing)
+	Globals.match_stats.hits[aidx]+=1
 
 func _kill_player(idx: int) -> void:
 	if players[idx].dead: return
 	players[idx].dead = true
 	var col : Color = Globals.C_P1 if players[idx].id == 1 else Globals.C_P2
 	_spawn_boids(players[idx].pos, col)
+	Backgrounds.on_death(col)
 	Sound.play_death()
+	Globals.match_stats.deaths[idx]+=1	
 	_end_round(2 if idx == 0 else 1)
 
 
@@ -794,7 +804,7 @@ func _remove_tile() -> void:
 	if alive.is_empty(): return
 	var idx : int = alive[randi() % alive.size()]
 	platforms[idx].marked = true
-	platforms[idx].shake  = 0.5
+	platforms[idx].shake = 0.5
 	Sound.play_crumble()
 	var pl : Dictionary = platforms[idx]
 	get_tree().create_timer(0.5).timeout.connect(func() -> void: pl.alive = false)
@@ -804,10 +814,15 @@ func _end_round(winner: int) -> void:
 	game_active = false
 	Globals.last_winner = winner
 	Globals.scores[winner - 1] += 1
-	var who : String = "ИГРОКА %d" % winner if (winner == 1 or Globals.player_count == 2) else "БОТА"
-	_announce("★ ПОБЕДА %s! ★" % who, 3.0)
-	announce_color = Globals.C_P1 if winner == 1 else Globals.C_P2
-	Sound.play_round_win()
-	await get_tree().create_timer(2.0).timeout
-	scene = Scene.RESULT
-	result_celebrate = 0.0
+	if Globals.scores[winner-1] >= WIN_SCORE:
+		await get_tree().create_timer(1.0).timeout
+		match_celebrate = 0.0 
+		scene=Scene.MATCH_END
+	else:
+		round_end_timer = 2.5 
+		scene=Scene.ROUND_END
+		
+func _draw_boids(c:Node2D)->void:
+	for b in boids:
+		var a : float=clamp(b.life/float(b.max_life)*2.5, 0.0, 1.0)
+		c.draw_circle(b.pos, float(b.size)*a, Color(b.color.r, b.color.g, b.color.b, a))
