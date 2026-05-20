@@ -18,7 +18,8 @@ config/name="Swap & Slap"
 config/description="2D платформер — меняй тела, толкай врага, побеждай!"
 run/main_scene="res://Game.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
-config/icon="res://icon.svg"
+config/icon="uid://bf80om3a1p4y4"
+config/windows_native_icon="res://icon.ico"
 
 [autoload]
 

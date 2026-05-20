@@ -160,7 +160,7 @@ func _input(ev: InputEvent) -> void:
 					diff_cursor = (diff_cursor-1+4)%4
 					Sound.play_menu_move()
 				elif kc in [KEY_DOWN, KEY_S, 4194322]:
-					diff_cursor = (diff_cursor+1)%3
+					diff_cursor = (diff_cursor+1)%4
 					Sound.play_menu_move()
 				elif kc in [KEY_SPACE, KEY_ENTER, 4194309]:
 					Sound.play_menu_confirm()

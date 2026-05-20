@@ -114,6 +114,8 @@ func update(delta: float, bot: Dictionary, enemy: Dictionary,
 			_update_medium(delta, bot, enemy, platforms, mode, king_rect, lava_y, swap_ready_bot)
 		Globals.BotDifficulty.HARD:
 			_update_hard(delta, bot, enemy, platforms, mode, king_rect, lava_y, swap_ready_bot)
+		Globals.BotDifficulty.AI:
+			_update_ai(delta, bot, enemy, platforms, mode, king_rect, lava_y, swap_ready_bot)
 
 func _update_easy(delta: float, bot: Dictionary, enemy: Dictionary,
 		_platforms: Array, mode: int, king_rect: Rect2,
@@ -356,29 +358,30 @@ func _update_ai(delta: float, bot: Dictionary, enemy: Dictionary,
 
 	_nn_think_t -= delta
 	if _nn_think_t > 0:
-		_apply_nn(_nn_cached, bot, enemy, bot_near_edge)
+		_apply_nn(_nn_cached, bot, enemy)
 		return
 
 	_nn_think_t = NN_THINK
 
 	var bed: float = min(bp.x, Globals.VW - bp.x) / Globals.VW
 	var eed: float = min(ep.x, Globals.VW - ep.x) / Globals.VW
+	
+	var norm_dx: float = ((ep.x - bp.x) / Globals.VW + 1.0) / 2.0
+	var norm_dy: float = ((ep.y - bp.y) / Globals.VH + 1.0) / 2.0
 
 	var inp: Array = [
 		bp.x / Globals.VW, bp.y / Globals.VH,
 		clamp(bot.vel.x / Globals.SPEED, -1.0, 1.0), clamp(bot.vel.y / 400.0, -1.0, 1.0),
 		ep.x / Globals.VW, ep.y / Globals.VH,
 		clamp(enemy.vel.x / Globals.SPEED, -1.0, 1.0), clamp(enemy.vel.y / 400.0, -1.0, 1.0),
-		(ep.x - bp.x) / Globals.VW, (ep.y - bp.y) / Globals.VH,
+		norm_dx, norm_dy,
 		bed, eed
 	]
 
 	_nn_cached = _nn_forward(inp)
-	_apply_nn(_nn_cached, bot, enemy, bot_near_edge)
+	_apply_nn(_nn_cached, bot, enemy)
 	
-func _apply_nn(out: Array, bot: Dictionary, enemy: Dictionary, bot_near_edge: bool) -> void:
-	var bp: Vector2 = bot.pos
-	var ep: Vector2 = enemy.pos
+func _apply_nn(out: Array, bot: Dictionary, enemy: Dictionary) -> void:
 	
 	if float(out[0]) > 0.5:
 		left = true
@@ -392,30 +395,7 @@ func _apply_nn(out: Array, bot: Dictionary, enemy: Dictionary, bot_near_edge: bo
 	if float(out[4]) > 0.7:
 		swap = true
 	
-	if bot_near_edge:
-		left = false
-		right = false
-		if bp.x < EDGE_DANGER:
-			right = true
-		else:
-			left = true
-		if not bot.on_floor and _jump_cd <= 0:
-			jump = true
-			_jump_cd = 0.4
-	
-	var dist: float = bp.distance_to(ep)
-	var enemy_near_edge2: bool = ep.x < EDGE_DANGER + 10 or ep.x > Globals.VW - EDGE_DANGER - 10
-	
-	if dist < REACT_DIST + 25 and enemy_near_edge2:
-		push = true
-		var dx: float = ep.x - bp.x
-		if abs(dx) > 8:
-			if dx > 0:
-				right = true
-			else:
-				left = true
-	
-	if _stuck_timer > 0.35 and bot.on_floor and _jump_cd <= 0:
+	if _stuck_timer > 0.4 and bot.on_floor and _jump_cd <= 0:
 		jump = true
 		_jump_cd = 0.4
 		_stuck_timer = 0.0
