@@ -135,14 +135,14 @@ func draw_map_select(c: Node2D, cursor: int, blink: float, _bob: float) -> void:
 
 	c.draw_rect(Rect2(0,0,VW,VH), Color(0,0,0,0.42))
 
-	c.draw_string(font, Vector2(VW/2 - 55, 16),
-				  "ВЫБОР КАРТЫ", HORIZONTAL_ALIGNMENT_CENTER, -1, 13, Globals.C_GOLD)
+	c.draw_string(font, Vector2(0, 16),
+				  "ВЫБОР КАРТЫ", HORIZONTAL_ALIGNMENT_CENTER, int(VW), 13, Globals.C_GOLD)
 	c.draw_line(Vector2(24,21), Vector2(VW-24,21),
 				Color(Globals.C_GOLD.r,Globals.C_GOLD.g,Globals.C_GOLD.b,0.28), 1.0)
 
 	var map_name : String = "СЛУЧАЙНАЯ 🎲" if cursor==11 else BG_NAMES[cursor]
-	c.draw_string(font, Vector2(VW/2 - 50, 33),
-				  map_name, HORIZONTAL_ALIGNMENT_CENTER, -1, 11, Globals.C_GOLD)
+	c.draw_string(font, Vector2(0, 33),
+				  map_name, HORIZONTAL_ALIGNMENT_CENTER, int(VW), 11, Globals.C_GOLD)
 
 
 	const COLS: int = 4
@@ -324,6 +324,7 @@ func draw_player(c: Node2D, p: Dictionary, _bg: int) -> void:
 
 
 	Globals.draw_ellipse(c, Vector2(px, py+h+2), w*0.78, 2.5, Color(0,0,0,0.38))
+	_draw_trail(c,p)
 
 	c.draw_rect(Rect2(px-w, py-h, w*2, h*2), col)
 	c.draw_rect(Rect2(px-w, py,   w*2, h),   drk)
@@ -516,7 +517,7 @@ func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
 					Color(diff_col.r,diff_col.g,diff_col.b,0.75))
 		c.draw_string(font, Vector2(VW-82, 27), diff_name,
 					  HORIZONTAL_ALIGNMENT_LEFT, -1, 5, Color(0,0,0,0.88))
-	c.draw_string(font, Vector2(VW/2, VH-3), "ESC=меню",
+	c.draw_string(font, Vector2(VW/2 - 10, VH-3), "ESC=меню",
 				  HORIZONTAL_ALIGNMENT_CENTER, -1, 6, Color(0.30,0.30,0.40))
 
 func _hud_badge(c: Node2D, font: Font, x: float, y: float,
@@ -648,8 +649,8 @@ func draw_round_end(c:Node2D, winner:int, scores:Array, timer:float, is_bot:bool
 	c.draw_rect(Rect2(0,0,VW,VH),Color(0,0,0,0.52))
 	c.draw_rect(Rect2(48,VH/2-30,VW-96,60),Color(0,0,0,0.88))
 	c.draw_rect(Rect2(48,VH/2-30,VW-96,60),wc,false,2.0)
-	c.draw_string(font,Vector2(VW/2,VH/2-6),"★  %s ВЫИГРАЛ РАУНД  ★"%who,HORIZONTAL_ALIGNMENT_CENTER,-1,13,wc)
-	c.draw_string(font,Vector2(VW/2,VH/2+14),"Счёт: P1 %d — %d P2"%[scores[0],scores[1]],HORIZONTAL_ALIGNMENT_CENTER,-1,9,Color(0.8,0.8,0.8))
+	c.draw_string(font,Vector2(0,VH/2-6),"★  %s ВЫИГРАЛ РАУНД  ★"%who,HORIZONTAL_ALIGNMENT_CENTER,int(VW),13,wc)
+	c.draw_string(font,Vector2(0,VH/2+14),"Счёт: P1 %d — %d P2"%[scores[0],scores[1]],HORIZONTAL_ALIGNMENT_CENTER,int(VW),9,Color(0.8,0.8,0.8))
 	var bw3:float=clamp(1.0-timer/2.5,0.0,1.0)*(VW-96)
 	c.draw_rect(Rect2(48,VH/2+26,VW-96,3),Color(0.15,0.15,0.25))
 	c.draw_rect(Rect2(48,VH/2+26,bw3,3),wc)
@@ -660,14 +661,14 @@ func draw_match_end(c:Node2D, winner:int, scores:Array, celebrate:float, is_bot:
 	var who:String="ИГРОК %d"%winner if (winner==1 or not is_bot) else "БОТ"
 	c.draw_rect(Rect2(28,14,VW-56,VH-28),Color(0,0,0,0.92))
 	c.draw_rect(Rect2(28,14,VW-56,VH-28),wc,false,2.0)
-	c.draw_string(font,Vector2(VW/2,44),"★  %s ВЫИГРАЛ МАТЧ!  ★"%who,HORIZONTAL_ALIGNMENT_CENTER,-1,17,wc)
-	c.draw_string(font,Vector2(VW/2,62),"Итог: P1 %d — %d P2"%[scores[0],scores[1]],HORIZONTAL_ALIGNMENT_CENTER,-1,10,Color(0.75,0.75,0.75))
+	c.draw_string(font,Vector2(0 ,44),"★  %s ВЫИГРАЛ МАТЧ!  ★"%who,HORIZONTAL_ALIGNMENT_CENTER,int(VW),17,wc)
+	c.draw_string(font,Vector2(0 ,62),"Итог: P1 %d — %d P2"%[scores[0],scores[1]],HORIZONTAL_ALIGNMENT_CENTER,int(VW),10,Color(0.75,0.75,0.75))
 	c.draw_line(Vector2(46,70),Vector2(VW-46,70),Color(wc.r,wc.g,wc.b,0.35),1.0)
-	c.draw_string(font,Vector2(VW/2,84),"— СТАТИСТИКА —",HORIZONTAL_ALIGNMENT_CENTER,-1,9,Color(0.5,0.6,0.7))
+	c.draw_string(font,Vector2(0 ,84),"— СТАТИСТИКА —",HORIZONTAL_ALIGNMENT_CENTER,int(VW),9,Color(0.5,0.6,0.7))
 	var rows4:Array=[["👊  Ударов",stats.hits],["💀  Смертей",stats.deaths],["🎁  Пикапов",stats.pickups]]
 	for i in rows4.size():
-		var ry:float=100.0+float(i)*22.0; var label4:String=rows4[i][0]; var vals4:Array=rows4[i][1]
+		var ry:float=130.0+float(i)*22.0; var label4:String=rows4[i][0]; var vals4:Array=rows4[i][1]
 		c.draw_string(font,Vector2(48,ry),label4,HORIZONTAL_ALIGNMENT_LEFT,-1,9,Color(0.65,0.65,0.75))
 		c.draw_string(font,Vector2(VW/2+8,ry),"P1: %d"%vals4[0],HORIZONTAL_ALIGNMENT_LEFT,-1,9,Globals.C_P1)
 		c.draw_string(font,Vector2(VW/2+70,ry),"P2: %d"%vals4[1],HORIZONTAL_ALIGNMENT_LEFT,-1,9,Globals.C_P2)
-	c.draw_string(font,Vector2(VW/2,VH-22),"Пробел / Enter — в главное меню",HORIZONTAL_ALIGNMENT_CENTER,-1,8,Color(0.7,0.7,0.82,abs(sin(celebrate*3.0))))
+	c.draw_string(font,Vector2(0, VH-22),"Пробел / Enter — в главное меню",HORIZONTAL_ALIGNMENT_CENTER,int(VW),8,Color(0.7,0.7,0.82,abs(sin(celebrate*3.0))))

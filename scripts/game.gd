@@ -197,16 +197,14 @@ func _input(ev: InputEvent) -> void:
 			elif kc in [KEY_RIGHT, 4194321]:
 				map_cursor = (map_cursor + 1) % 12
 				Sound.play_menu_move()
-			elif kc in [KEY_UP,    4194320]:
-				if map_cursor < 6: map_cursor = (map_cursor + 6) % 12
-				elif map_cursor < 11: map_cursor = map_cursor - 5
-				else: map_cursor = 10
-				Sound.play_menu_move()
-			elif kc in [KEY_DOWN,  4194322]:
-				if map_cursor < 6: map_cursor = map_cursor + 5 if map_cursor < 6 else 11
-				elif map_cursor < 11: map_cursor = (map_cursor - 5 + 6)
-				else: map_cursor = 6
-				Sound.play_menu_move()
+			elif kc in [KEY_UP, 4194320]:
+				if map_cursor >= 4:
+					map_cursor -= 4
+					Sound.play_menu_move()
+			elif kc in [KEY_DOWN, 4194322]:
+				if map_cursor < 8:
+					map_cursor += 4
+					Sound.play_menu_move()
 			elif kc in [KEY_SPACE, KEY_ENTER, 4194309]:
 				Sound.play_menu_confirm()
 				if map_cursor == 11:
@@ -270,7 +268,7 @@ func _draw_game() -> void:
 
 	var mode_str : String = "— %s —" % Globals.MODE_NAMES[Globals.selected_mode]
 	draw_string(ThemeDB.fallback_font,
-				Vector2(Globals.VW/2.0, 28.0),
+				Vector2(Globals.VW/2.0 - 30, 35.0),
 				mode_str,
 				HORIZONTAL_ALIGNMENT_CENTER, -1, 8,
 				Color(1,1,1,0.25))
