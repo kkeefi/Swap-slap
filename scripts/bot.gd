@@ -119,73 +119,48 @@ func update(delta: float, bot: Dictionary, enemy: Dictionary,
 
 func _update_easy(delta: float, bot: Dictionary, enemy: Dictionary,
 		_platforms: Array, mode: int, king_rect: Rect2,
-		lava_y: float, swap_ready_bot: bool) -> void:
+		lava_y: float, _swap_ready_bot: bool) -> void:
 
 	var bp : Vector2 = bot.pos
 	var ep : Vector2 = enemy.pos
-	var dist : float  = bp.distance_to(ep)
-
-	if swap_ready_bot and (ep.x < 70 or ep.x > Globals.VW - 70) and randf() < 0.3:
-		swap = true
+	var dist : float = bp.distance_to(ep)
 
 	if mode == Globals.Mode.LAVA: _lava_survive(bot, _platforms, lava_y); return
 	if mode == Globals.Mode.KING: _king_logic(bot, enemy, king_rect); return
 
 	_easy_think_cd -= delta
-	if _easy_think_cd > 0:
-		_exec_easy_state(bp, ep, dist, bot)
+	if _easy_think_cd > 0: 
+		if randf() < 0.5:
+			var dx : float = ep.x - bp.x
+			if abs(dx) > 12:
+				if dx > 0: right = true
+				else: left = true
 		return
 
-	_easy_think_cd = randf_range(0.15, 0.35)
+	_easy_think_cd = randf_range(0.25, 0.55)
 
 	if randf() < 0.25:
-		if randf() < 0.5: right = true
-		else: left = true
-		if randf() < 0.2 and bot.on_floor: jump = true
 		return
 
-	var near_self:bool=bp.x<EDGE_DANGER or bp.x>Globals.VW-EDGE_DANGER
-	if near_self and not bot.on_floor:
-		_state=State.RETREAT 
-		_dodge_dir=int(-sign(bp.x-Globals.VW/2.0))
-		if _dodge_dir==0: _dodge_dir=1
-	elif _stuck_timer>0.5: 
-		_state=State.JUMP_TO; _stuck_timer=0.0
-	elif dist<REACT_DIST: 
-		_state=State.ATTACK
-	else: _state=State.CHASE
-	
-	_exec_easy_state(bp, ep, dist, bot)
-	
-func _exec_easy_state(bp: Vector2, ep: Vector2, dist: float, bot: Dictionary) -> void:
+	if randf() < 0.15:
+		if randf() < 0.5: right = true
+		else: left = true
+		return
+
 	var dx : float = ep.x - bp.x
-	match _state:
-		State.CHASE:
-			if abs(dx) > 6:
-				if dx > 0: right = true
-				else: left = true
-			if bot.on_floor and ep.y < bp.y - 25 and _jump_cd <= 0:
-				jump = true; _jump_cd = 0.5
-		State.ATTACK:
-			if abs(dx) > 8:
-				if dx > 0: right = true
-				else: left = true
-			if dist < REACT_DIST: push = true
-			if bot.on_floor and abs(ep.y-bp.y) > 20 and _jump_cd <= 0:
-				jump = true; _jump_cd = 0.4
-		State.RETREAT:
-			if _dodge_dir > 0: right = true
-			else: left = true
-			if bot.on_floor and _jump_cd <= 0:
-				jump = true; _jump_cd = 0.6
-		State.SURVIVE:
-			if bp.x<Globals.VW/2: right=true 
-			else: left=true
-		State.JUMP_TO:
-			if dx > 0: right = true
-			else: left = true
-			if bot.on_floor and _jump_cd <= 0:
-				jump = true; _jump_cd = 0.5
+	if abs(dx) > 12:
+		if dx > 0: right = true
+		else: left = true
+
+	if dist < REACT_DIST and randf() < 0.7:
+		push = true
+
+	if bot.on_floor and ep.y < bp.y - 30 and _jump_cd <= 0 and randf() < 0.7:
+		jump = true; _jump_cd = 0.6
+		
+	if (bp.x < EDGE_DANGER or bp.x > Globals.VW - EDGE_DANGER) and randf() < 0.65:
+		if bp.x < Globals.VW / 2: right = true
+		else: left = true
 				
 func _update_medium(delta: float, bot: Dictionary, enemy: Dictionary,
 		platforms: Array, mode: int, king_rect: Rect2,

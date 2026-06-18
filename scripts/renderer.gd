@@ -537,12 +537,22 @@ func draw_announcement(c: Node2D, text: String, timer: float, color: Color) -> v
 	var alpha : float = clamp(timer, 0.0, 1.0)
 	if timer > 99.0: alpha = 1.0
 	if alpha <= 0.0: return
+
 	var ay : float = Globals.VH/2.0 - 18.0
-	c.draw_rect(Rect2(40, ay-5, Globals.VW-80, 26), Color(0,0,0,alpha*0.68))
-	c.draw_rect(Rect2(40, ay-5, Globals.VW-80, 26), Color(color.r,color.g,color.b,alpha*0.20), false, 1.0)
-	c.draw_string(ThemeDB.fallback_font, Vector2(Globals.VW/2-85, ay),
-				  text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
-				  Color(color.r,color.g,color.b,alpha))
+	var pad : float = 40.0 
+	var pw : float = Globals.VW - pad * 2.0
+	var px : float = pad
+
+	c.draw_rect(Rect2(px, ay-5, pw, 26), Color(0,0,0,alpha*0.68))
+	c.draw_rect(Rect2(px, ay-5, pw, 26), Color(color.r,color.g,color.b,alpha*0.20), false, 1.0)
+
+	c.draw_string(ThemeDB.fallback_font,
+				  Vector2(px, ay + 9),
+				  text,
+				  HORIZONTAL_ALIGNMENT_CENTER,
+				  int(pw),
+				  11,
+				  Color(color.r, color.g, color.b, alpha))
 
 
 func draw_result(c: Node2D, winner: int, scores: Array,
