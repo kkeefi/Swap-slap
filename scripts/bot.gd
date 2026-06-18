@@ -25,6 +25,8 @@ var _astar_path : Array = []
 var _path_cd : float = 0.0
 const PATH_RETHINK: float = 0.35
 
+var _nn_move_dir : float = 0.0
+
 const NN_W1 : Array = [
 	[ 0.82,-0.61, 0.44,-0.33, 1.12,-0.78, 0.29,-0.55, 1.45,-0.38, 0.92,-1.14],
 	[-0.55, 0.88,-0.72, 0.61,-0.44, 0.93,-0.81, 0.47,-0.33, 1.28,-0.65, 0.41],
@@ -65,7 +67,7 @@ const NN_W3 : Array = [
 const NN_B3 : Array = [ 0.18,-0.12, 0.08,-0.15, 0.22]
 
 var _nn_think_t : float = 0.0
-const NN_THINK : float = 0.05
+const NN_THINK : float = 0.15
 var _nn_cached : Array = [0.0,0.0,0.0,0.0,0.0]
 
 func _nn_sigmoid(x: float) -> float:
@@ -95,6 +97,7 @@ func reset() -> void:
 	_easy_think_cd=0.0; _astar_path=[]; _path_cd=0.0
 	_nn_think_t=0.0; _nn_cached=[0.0,0.0,0.0,0.0,0.0]
 	_medium_think_cd = 0.0
+	_nn_move_dir = 0.0
 
 func update(delta: float, bot: Dictionary, enemy: Dictionary,
 		platforms: Array, mode: int, king_rect: Rect2,
@@ -381,12 +384,22 @@ func _update_ai(delta: float, bot: Dictionary, enemy: Dictionary,
 	_nn_cached = _nn_forward(inp)
 	_apply_nn(_nn_cached, bot, enemy)
 	
-func _apply_nn(out: Array, bot: Dictionary, enemy: Dictionary) -> void:
-	
-	if float(out[0]) > 0.5:
-		left = true
-	if float(out[1]) > 0.5:
-		right = true
+func _apply_nn(out: Array, bot: Dictionary, _enemy: Dictionary) -> void:
+	var want_left  : bool = float(out[0]) > 0.5
+	var want_right : bool = float(out[1]) > 0.5
+
+	if want_left and want_right:
+		if float(out[0]) >= float(out[1]): want_right = false
+		else: want_left = false
+
+	var target_dir : float = 0.0
+	if want_right: target_dir =  1.0
+	elif want_left: target_dir = -1.0
+	_nn_move_dir = lerp(_nn_move_dir, target_dir, 0.15)
+
+	left  = _nn_move_dir < -0.45
+	right = _nn_move_dir >  0.45
+
 	if float(out[2]) > 0.52 and bot.on_floor and _jump_cd <= 0:
 		jump = true
 		_jump_cd = 0.3
@@ -394,7 +407,7 @@ func _apply_nn(out: Array, bot: Dictionary, enemy: Dictionary) -> void:
 		push = true
 	if float(out[4]) > 0.7:
 		swap = true
-	
+
 	if _stuck_timer > 0.4 and bot.on_floor and _jump_cd <= 0:
 		jump = true
 		_jump_cd = 0.4
