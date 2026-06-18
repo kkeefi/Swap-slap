@@ -473,7 +473,7 @@ func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
 		c.draw_string(font, Vector2(VW/2, 10), "⇄",
 					  HORIZONTAL_ALIGNMENT_CENTER, -1, 11, Color(0.45,0.45,0.55))
 	else:
-		c.draw_string(font, Vector2(VW/2, 15),
+		c.draw_string(font, Vector2(VW/2 - 22, 10),
 					  "⚡ ХАОС %.1fs" % max(0.0, chaos_interval-chaos_timer),
 					  HORIZONTAL_ALIGNMENT_CENTER, -1, 8, Color(1,0.6,0.2))
 
