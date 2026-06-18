@@ -511,11 +511,17 @@ func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
 					  HORIZONTAL_ALIGNMENT_LEFT, -1, 6,
 					  Color(Globals.C_P2.r,Globals.C_P2.g,Globals.C_P2.b,0.55))
 	else:
-		var diff_name : String = Globals.DIFF_NAMES[Globals.bot_difficulty]
-		var diff_col  : Color  = Globals.DIFF_COLORS[Globals.bot_difficulty]
-		c.draw_string(font, Vector2(VW-4, VH-3),
-					  "🤖 " + diff_name,
-					  HORIZONTAL_ALIGNMENT_RIGHT, -1, 6,
+		var diff_name : String = "🤖 " + Globals.DIFF_NAMES[Globals.bot_difficulty]
+		var diff_col : Color = Globals.DIFF_COLORS[Globals.bot_difficulty]
+		
+		# Считаем ширину строки вместе со смайликом
+		var text_width = font.get_string_size(diff_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 6).x
+		# Вычисляем позицию: правый край экрана минус ширина текста минус отступ 4
+		var text_pos = Vector2(VW - text_width - 4, VH - 3)
+		
+		c.draw_string(font, text_pos,
+					  diff_name,
+					  HORIZONTAL_ALIGNMENT_LEFT, -1, 6,
 					  Color(Globals.C_P2.r,Globals.C_P2.g,Globals.C_P2.b,0.55))
 		c.draw_rect(Rect2(VW-83, 22, 42, 5),
 					Color(diff_col.r,diff_col.g,diff_col.b,0.75))
