@@ -19,6 +19,7 @@ var _last_pos : Vector2 = Vector2.ZERO
 var _dodge_dir : int   = 1
 
 var _easy_think_cd : float = 0.0
+var _medium_think_cd : float = 0.0
 
 var _astar_path : Array = []
 var _path_cd : float = 0.0
@@ -93,6 +94,7 @@ func reset() -> void:
 	_state=State.CHASE; _jump_cd=0.0; _stuck_timer=0.0
 	_easy_think_cd=0.0; _astar_path=[]; _path_cd=0.0
 	_nn_think_t=0.0; _nn_cached=[0.0,0.0,0.0,0.0,0.0]
+	_medium_think_cd = 0.0
 
 func update(delta: float, bot: Dictionary, enemy: Dictionary,
 		platforms: Array, mode: int, king_rect: Rect2,
@@ -163,60 +165,53 @@ func _update_easy(delta: float, bot: Dictionary, enemy: Dictionary,
 		else: left = true
 				
 func _update_medium(delta: float, bot: Dictionary, enemy: Dictionary,
-		platforms: Array, mode: int, king_rect: Rect2,
+		_platforms: Array, mode: int, king_rect: Rect2,
 		lava_y: float, swap_ready_bot: bool) -> void:
 
 	var bp : Vector2 = bot.pos
 	var ep : Vector2 = enemy.pos
+	var dist : float = bp.distance_to(ep)
 
-	if swap_ready_bot and (ep.x < 80 or ep.x > Globals.VW - 80):
+	if swap_ready_bot and (ep.x < 80 or ep.x > Globals.VW - 80) and randf() < 0.4:
 		swap = true
 
-	if mode == Globals.Mode.LAVA: _lava_survive(bot, platforms, lava_y); return
+	if mode == Globals.Mode.LAVA: _lava_survive(bot, _platforms, lava_y); return
 	if mode == Globals.Mode.KING: _king_logic(bot, enemy, king_rect); return
 
-	var predicted_ep : Vector2 = ep + enemy.vel * 0.25
-	predicted_ep.x = clamp(predicted_ep.x, 0, Globals.VW)
-	predicted_ep.y = clamp(predicted_ep.y, 0, Globals.VH)
-	var dist_pred : float = bp.distance_to(predicted_ep)
+	# всегда двигается к врагу — без пауз на движение
+	var dx : float = ep.x - bp.x
+	if abs(dx) > 10:
+		if dx > 0: right = true
+		else: left = true
 
-	_path_cd -= delta
-	if _path_cd <= 0 or _astar_path.is_empty():
-		_path_cd = PATH_RETHINK
-		_astar_path = _astar_find_path(bp, predicted_ep, platforms)
+	# решения принимает с небольшой паузой
+	_medium_think_cd -= delta
+	if _medium_think_cd > 0:
+		return
 
-	if not _astar_path.is_empty():
-		var nxt : Vector2 = _astar_path[0]
-		if bp.distance_to(nxt) < 20:
-			_astar_path.pop_front()
-		else:
-			var dx : float = nxt.x - bp.x
-			if abs(dx) > 8:
-				if dx > 0: right = true
-				else: left = true
-			if (nxt.y < bp.y - 18) and bot.on_floor and _jump_cd <= 0:
-				jump = true; _jump_cd = 0.45
+	_medium_think_cd = randf_range(0.18, 0.38)  # было 0.1-0.25
 
-	if _astar_path.is_empty():
-		var dx : float = ep.x - bp.x
-		if abs(dx) > 15:
-			if dx > 0: right = true
-			else: left = true
+	# 10% — пропускает действие
+	if randf() < 0.1:
+		return
 
-	if bot.on_floor and ep.y < bp.y - 25 and _jump_cd <= 0:
-		jump = true
-		_jump_cd = 0.45
-
-	if dist_pred < REACT_DIST:
+	# толкает в 65% случаев
+	if dist < REACT_DIST and randf() < 0.5:
 		push = true
 
-	if (bp.x < 60 or bp.x > Globals.VW - 60) and not bot.on_floor:
+	# прыгает если враг выше
+	if bot.on_floor and ep.y < bp.y - 25 and _jump_cd <= 0 and randf() < 0.55:
+		jump = true; _jump_cd = 0.45
+
+	# от края уходит в 60% случаев
+	if (bp.x < EDGE_DANGER or bp.x > Globals.VW - EDGE_DANGER) and randf() < 0.5:
 		if bp.x < Globals.VW/2: right = true
 		else: left = true
 
-	if _stuck_timer > 0.4 and bot.on_floor and _jump_cd <= 0:
+	# застрял — прыгает
+	if _stuck_timer > 0.5 and bot.on_floor and _jump_cd <= 0:
 		jump = true; _jump_cd = 0.5; _stuck_timer = 0.0
-
+		
 func _astar_find_path(start: Vector2, target: Vector2, platforms: Array) -> Array:
 	var points: Array = []
 	points.append({"pos": start, "type": "start"})
@@ -293,23 +288,68 @@ func _update_hard(delta: float, bot: Dictionary, enemy: Dictionary,
 		platforms: Array, mode: int, king_rect: Rect2,
 		lava_y: float, swap_ready_bot: bool) -> void:
 
-	_update_medium(delta, bot, enemy, platforms, mode, king_rect, lava_y, swap_ready_bot)
+	var bp : Vector2 = bot.pos
+	var ep : Vector2 = enemy.pos
+	var dist : float = bp.distance_to(ep)
 
-	var bp: Vector2 = bot.pos
-	var ep: Vector2 = enemy.pos
-	var dist: float = bp.distance_to(ep)
-	var dx: float = ep.x - bp.x
+	if swap_ready_bot and (ep.x < EDGE_DANGER or ep.x > Globals.VW - EDGE_DANGER):
+		swap = true
 
-	if dist < REACT_DIST + 20:
-		push = true
+	if mode == Globals.Mode.LAVA: _lava_survive(bot, platforms, lava_y); return
+	if mode == Globals.Mode.KING: _king_logic(bot, enemy, king_rect); return
 
-	if bot.on_floor and abs(ep.y - bp.y) > 15 and _jump_cd <= 0:
-		jump = true
-		_jump_cd = 0.35
+	# предсказывает куда ты идёшь
+	var predicted_ep : Vector2 = ep + enemy.vel * 0.3
+	predicted_ep.x = clamp(predicted_ep.x, 0, Globals.VW)
+	predicted_ep.y = clamp(predicted_ep.y, 0, Globals.VH)
 
-	if abs(dx) > 10:
+	# A* к предсказанной позиции, пересчёт часто
+	_path_cd -= delta
+	if _path_cd <= 0 or _astar_path.is_empty():
+		_path_cd = PATH_RETHINK
+		_astar_path = _astar_find_path(bp, predicted_ep, platforms)
+
+	if not _astar_path.is_empty():
+		var nxt : Vector2 = _astar_path[0]
+		if bp.distance_to(nxt) < 20:
+			_astar_path.pop_front()
+		else:
+			var dx : float = nxt.x - bp.x
+			if abs(dx) > 8:
+				if dx > 0: right = true
+				else: left = true
+			if (nxt.y < bp.y - 18) and bot.on_floor and _jump_cd <= 0:
+				jump = true; _jump_cd = 0.4
+
+	if _astar_path.is_empty():
+		var dx : float = ep.x - bp.x
+		if abs(dx) > 8:
+			if dx > 0: right = true
+			else: left = true
+
+	# если враг у края — давит без остановки
+	var enemy_near_edge : bool = ep.x < EDGE_DANGER or ep.x > Globals.VW - EDGE_DANGER
+	if enemy_near_edge:
+		var dx : float = ep.x - bp.x
 		if dx > 0: right = true
 		else: left = true
+		push = true
+
+	# в остальных случаях толкает почти всегда
+	elif dist < REACT_DIST and randf() < 0.85:
+		push = true
+
+	# прыгает надёжно
+	if bot.on_floor and ep.y < bp.y - 18 and _jump_cd <= 0:
+		jump = true; _jump_cd = 0.35
+
+	# от края уходит всегда
+	if (bp.x < EDGE_DANGER or bp.x > Globals.VW - EDGE_DANGER):
+		if bp.x < Globals.VW/2: right = true
+		else: left = true
+
+	if _stuck_timer > 0.3 and bot.on_floor and _jump_cd <= 0:
+		jump = true; _jump_cd = 0.4; _stuck_timer = 0.0
 		
 func _update_ai(delta: float, bot: Dictionary, enemy: Dictionary,
 		platforms: Array, mode: int, king_rect: Rect2,
