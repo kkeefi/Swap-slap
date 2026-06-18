@@ -502,9 +502,15 @@ func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
 				  HORIZONTAL_ALIGNMENT_LEFT, -1, 6,
 				  Color(Globals.C_P1.r,Globals.C_P1.g,Globals.C_P1.b,0.55))
 	if not is_bot:
-		c.draw_string(font, Vector2(VW-4, VH-3),
-					  "↑←↓→ · ↓=удар · Enter=обмен",
-					  HORIZONTAL_ALIGNMENT_RIGHT, -1, 6,
+		# Вычисляем позицию, чтобы текст точно поместился
+		var p2_controls = "↑←↓→ · Shift=удар · Enter=обмен"
+		var text_width = font.get_string_size(p2_controls, HORIZONTAL_ALIGNMENT_LEFT, -1, 6).x
+	# Сдвигаем точку начала влево на 160 пикселей от правого края
+		var text_pos = Vector2(VW - text_width - 4, VH - 3)
+	
+		c.draw_string(font, text_pos,
+					  p2_controls,
+					  HORIZONTAL_ALIGNMENT_LEFT, -1, 6,
 					  Color(Globals.C_P2.r,Globals.C_P2.g,Globals.C_P2.b,0.55))
 	else:
 		var diff_name : String = Globals.DIFF_NAMES[Globals.bot_difficulty]
