@@ -132,14 +132,14 @@ func _update_easy(delta: float, bot: Dictionary, enemy: Dictionary,
 
 	_easy_think_cd -= delta
 	if _easy_think_cd > 0:
-		if randf() < 0.3:
+		if randf() < 0.5:
 			var dx : float = ep.x - bp.x
 			if abs(dx) > 12:
 				if dx > 0: right = true
 				else: left = true
 		return
 
-	_easy_think_cd = randf_range(0.4, 0.7)
+	_easy_think_cd = randf_range(0.25, 0.55)
 
 	if randf() < 0.25:
 		return
@@ -154,10 +154,10 @@ func _update_easy(delta: float, bot: Dictionary, enemy: Dictionary,
 		if dx > 0: right = true
 		else: left = true
 
-	if dist < REACT_DIST and randf() < 0.5:
+	if dist < REACT_DIST and randf() < 0.7:
 		push = true
 
-	if bot.on_floor and ep.y < bp.y - 30 and _jump_cd <= 0 and randf() < 0.5:
+	if bot.on_floor and ep.y < bp.y - 30 and _jump_cd <= 0 and randf() < 0.7:
 		jump = true; _jump_cd = 0.6
 
 	if (bp.x < EDGE_DANGER or bp.x > Globals.VW - EDGE_DANGER) and randf() < 0.65:
@@ -187,18 +187,18 @@ func _update_medium(delta: float, bot: Dictionary, enemy: Dictionary,
 	if _medium_think_cd > 0:
 		return
 
-	_medium_think_cd = randf_range(0.18, 0.38)
+	_medium_think_cd = randf_range(0.1, 0.22)
 
 	if randf() < 0.1:
 		return
 
-	if dist < REACT_DIST and randf() < 0.5:
+	if dist < REACT_DIST and randf() < 0.65:
 		push = true
 
-	if bot.on_floor and ep.y < bp.y - 25 and _jump_cd <= 0 and randf() < 0.55:
+	if bot.on_floor and ep.y < bp.y - 25 and _jump_cd <= 0 and randf() < 0.7:
 		jump = true; _jump_cd = 0.45
 
-	if (bp.x < EDGE_DANGER or bp.x > Globals.VW - EDGE_DANGER) and randf() < 0.5:
+	if (bp.x < EDGE_DANGER or bp.x > Globals.VW - EDGE_DANGER) and randf() < 0.65:
 		if bp.x < Globals.VW/2: right = true
 		else: left = true
 
