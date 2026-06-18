@@ -404,7 +404,6 @@ func _lava_survive(bot: Dictionary, enemy: Dictionary, platforms: Array, lava_y:
 	var bp : Vector2 = bot.pos
 	var ep : Vector2 = enemy.pos
 
-	# ищем безопасную платформу
 	var best_x : float = Globals.VW / 2.0
 	var best_y : float = Globals.VH
 	for pl in platforms:
@@ -420,14 +419,12 @@ func _lava_survive(bot: Dictionary, enemy: Dictionary, platforms: Array, lava_y:
 	var dist : float = bp.distance_to(ep)
 
 	if danger:
-		# опасно — спасаемся, враг не важен
 		if abs(dx_safe) > 10:
 			if dx_safe > 0: right = true
 			else: left = true
 		if bot.on_floor and _jump_cd <= 0:
 			jump = true; _jump_cd = 0.5
 	else:
-		# в безопасности — атакуем врага
 		if abs(dx_enemy) > 10:
 			if dx_enemy > 0: right = true
 			else: left = true
@@ -438,7 +435,6 @@ func _lava_survive(bot: Dictionary, enemy: Dictionary, platforms: Array, lava_y:
 		if bot.on_floor and ep.y < bp.y - 25 and _jump_cd <= 0 and randf() < 0.65:
 			jump = true; _jump_cd = 0.5
 
-		# если враг у лавы — подталкиваем активнее
 		if ep.y + Globals.PH > lava_y - 40:
 			if abs(dx_enemy) > 8:
 				if dx_enemy > 0: right = true

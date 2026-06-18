@@ -502,10 +502,8 @@ func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
 				  HORIZONTAL_ALIGNMENT_LEFT, -1, 6,
 				  Color(Globals.C_P1.r,Globals.C_P1.g,Globals.C_P1.b,0.55))
 	if not is_bot:
-		# Вычисляем позицию, чтобы текст точно поместился
 		var p2_controls = "↑←↓→ · Shift=удар · Enter=обмен"
 		var text_width = font.get_string_size(p2_controls, HORIZONTAL_ALIGNMENT_LEFT, -1, 6).x
-	# Сдвигаем точку начала влево на 160 пикселей от правого края
 		var text_pos = Vector2(VW - text_width - 4, VH - 3)
 	
 		c.draw_string(font, text_pos,

@@ -813,6 +813,7 @@ func _end_round(winner: int) -> void:
 	Globals.last_winner = winner
 	Globals.scores[winner - 1] += 1
 	if Globals.scores[winner-1] >= WIN_SCORE:
+		Sound.play_match_win()
 		await get_tree().create_timer(1.0).timeout
 		match_celebrate = 0.0 
 		scene=Scene.MATCH_END

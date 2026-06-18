@@ -91,7 +91,9 @@ func play_super_jump():
 	_tone(210, 0.22, "sine", 0.32, 0.005, 540)
 
 func play_land():
-	_tone(72, 0.09, "noise", 0.17, 0.002, 36, 0.3)
+	_tone(280, 0.07, "sine", 0.55, 0.001, 120)
+	await get_tree().create_timer(0.03).timeout
+	_tone(180, 0.08, "sine", 0.38, 0.001, 100)
 
 func play_push():
 	_tone(58, 0.14, "square", 0.38, 0.002, 28, 0.4)
@@ -129,10 +131,12 @@ func play_pickup_boots():
 		_tone(260 + i * 170, 0.07 + i * 0.03, "tri", 0.23, 0.005, 430 + i * 170)
 
 func play_death():
-	_tone(180, 0.10, "square", 0.34, 0.002, 70, 0.3)
-	await get_tree().create_timer(0.09).timeout
-	_tone(85, 0.22, "noise", 0.25, 0.005, 36, 0.5)
-
+	_tone(523, 0.10, "sine", 0.38, 0.008, 523)
+	await get_tree().create_timer(0.10).timeout
+	_tone(392, 0.10, "sine", 0.34, 0.008, 392)
+	await get_tree().create_timer(0.10).timeout
+	_tone(262, 0.22, "sine", 0.30, 0.008, 262)
+	
 func play_round_win():
 	for i in 3:
 		await get_tree().create_timer(i * 0.12).timeout
@@ -187,3 +191,14 @@ func _process(delta: float):
 			if b_val > 0:
 				var b: float = float(b_val)
 				_tone(b, dur * 1.2, "saw", 0.07, 0.02, b * 0.99, 0.05)
+				
+func play_match_win():
+	_tone(523, 0.10, "sine", 0.32, 0.005, 523)
+	await get_tree().create_timer(0.10).timeout
+	_tone(659, 0.10, "sine", 0.32, 0.005, 659)
+	await get_tree().create_timer(0.10).timeout
+	_tone(784, 0.10, "sine", 0.32, 0.005, 784)
+	await get_tree().create_timer(0.10).timeout
+	_tone(659, 0.08, "sine", 0.28, 0.005, 659)
+	await get_tree().create_timer(0.08).timeout
+	_tone(1047, 0.35, "sine", 0.38, 0.01, 1047)
