@@ -12,7 +12,7 @@ const VW: float = 480.0
 const VH: float = 270.0
 const PW: float = 7.0
 const PH: float = 10.0
-const KING_WIN_TIME: float = 7.0
+const KING_WIN_TIME: float = 5.0
 
 const C_P1: Color = Color(0.22, 0.52, 1.00)
 const C_P2: Color = Color(1.00, 0.25, 0.25)

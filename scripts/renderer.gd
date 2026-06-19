@@ -425,7 +425,7 @@ func draw_king_zone(c: Node2D, king_rect: Rect2, p1_in: bool, p2_in: bool, kt: A
 	c.draw_rect(king_rect, Color(1,1,0,0.35+abs(sin(time*3.2))*0.38), false, 1.8)
 	var cx : float = king_rect.position.x + king_rect.size.x/2.0
 	var cy : float = king_rect.position.y + king_rect.size.y/2.0
-	c.draw_string(ThemeDB.fallback_font, Vector2(cx, cy+5),
+	c.draw_string(ThemeDB.fallback_font, Vector2(cx-7, cy+5),
 				  "♛", HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color(1,0.9,0.2,0.52))
 	var by_ : float = king_rect.position.y - 14
 	c.draw_string(ThemeDB.fallback_font, Vector2(king_rect.position.x+2, by_),
@@ -450,7 +450,7 @@ func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
 
 	if mode != Globals.Mode.CHAOS:
 		var bw : float  = 85.0; var bh : float = 7.0; var by_ : float = 6.0
-		var b1x : float = 88.0; var b2x : float = VW - 88.0 - bw
+		var b1x : float = 100.0; var b2x : float = VW - 100.0 - bw
 		for i in 2:
 			var bx : float  = b1x if i==0 else b2x
 			var sc : float  = float(swap_charge[i])
@@ -464,11 +464,11 @@ func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
 			if rdy:
 				lbl = "P1:[E] ОБМЕН!" if i==0 else ("🤖 ОБМЕН!" if is_bot else "P2:[↵] ОБМЕН!")
 				if abs(sin(menu_blink*5))>0.3:
-					c.draw_string(font, Vector2(bx+bw/2, by_+16), lbl,
+					c.draw_string(font, Vector2(bx+bw/2 - 15, by_+16), lbl,
 								  HORIZONTAL_ALIGNMENT_CENTER, -1, 7, Globals.C_GOLD)
 			else:
 				lbl = "P1 обмен" if i==0 else ("БОТ обмен" if is_bot else "P2 обмен")
-				c.draw_string(font, Vector2(bx+bw/2, by_+16), lbl,
+				c.draw_string(font, Vector2(bx+bw/2 - 15, by_+14), lbl,
 							  HORIZONTAL_ALIGNMENT_CENTER, -1, 6, Color(0.45,0.50,0.60))
 		c.draw_string(font, Vector2(VW/2, 10), "⇄",
 					  HORIZONTAL_ALIGNMENT_CENTER, -1, 11, Color(0.45,0.45,0.55))
@@ -512,21 +512,15 @@ func draw_hud(c: Node2D, scores: Array, swap_charge: Array, swap_ready: Array,
 					  Color(Globals.C_P2.r,Globals.C_P2.g,Globals.C_P2.b,0.55))
 	else:
 		var diff_name : String = "🤖 " + Globals.DIFF_NAMES[Globals.bot_difficulty]
-		var diff_col : Color = Globals.DIFF_COLORS[Globals.bot_difficulty]
 		
-		# Считаем ширину строки вместе со смайликом
 		var text_width = font.get_string_size(diff_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 6).x
-		# Вычисляем позицию: правый край экрана минус ширина текста минус отступ 4
 		var text_pos = Vector2(VW - text_width - 4, VH - 3)
 		
 		c.draw_string(font, text_pos,
 					  diff_name,
 					  HORIZONTAL_ALIGNMENT_LEFT, -1, 6,
 					  Color(Globals.C_P2.r,Globals.C_P2.g,Globals.C_P2.b,0.55))
-		c.draw_rect(Rect2(VW-83, 22, 42, 5),
-					Color(diff_col.r,diff_col.g,diff_col.b,0.75))
-		c.draw_string(font, Vector2(VW-82, 27), diff_name,
-					  HORIZONTAL_ALIGNMENT_LEFT, -1, 5, Color(0,0,0,0.88))
+
 	c.draw_string(font, Vector2(VW/2 - 10, VH-3), "ESC=меню",
 				  HORIZONTAL_ALIGNMENT_CENTER, -1, 6, Color(0.30,0.30,0.40))
 
